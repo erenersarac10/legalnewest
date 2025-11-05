@@ -1,0 +1,1 @@
+# Bankacılık düzenlemesi adapter (düzenlemeler)

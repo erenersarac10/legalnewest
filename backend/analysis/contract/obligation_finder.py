@@ -1,0 +1,1 @@
+# Yükümlülük bulucu (görevler, sorumluluklar)

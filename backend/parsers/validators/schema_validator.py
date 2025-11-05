@@ -1,0 +1,1 @@
+# Şema doğrulama (Pydantic)

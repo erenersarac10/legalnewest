@@ -1,0 +1,1 @@
+# Cache yardımcıları (memoization)

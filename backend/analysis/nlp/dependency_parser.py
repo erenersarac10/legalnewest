@@ -1,0 +1,1 @@
+# Dependency parsing (sözdizimi ağacı)

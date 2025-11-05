@@ -1,0 +1,1 @@
+# Hukuki atıf referansları tablosu

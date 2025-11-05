@@ -1,0 +1,1 @@
+# Statik içerik CDN cache

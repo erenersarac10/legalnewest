@@ -1,0 +1,1 @@
+# Veritabanı snapshot yönetimi

@@ -1,0 +1,1 @@
+# Sayıştay adapter (denetim raporları)

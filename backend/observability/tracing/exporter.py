@@ -1,0 +1,1 @@
+# Traces → Jaeger/Grafana Tempo

@@ -1,0 +1,1 @@
+# Embeddings için pgvector extension

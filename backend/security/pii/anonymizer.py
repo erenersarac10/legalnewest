@@ -1,0 +1,1 @@
+# Veri anonimleştirme (k-anonymity)

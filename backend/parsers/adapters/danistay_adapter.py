@@ -1,0 +1,1 @@
+# Danıştay adapter (idari kararlar)

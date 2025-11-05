@@ -1,0 +1,1 @@
+# CPU/RAM bazlı ölçekleme

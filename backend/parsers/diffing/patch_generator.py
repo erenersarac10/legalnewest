@@ -1,0 +1,1 @@
+# Yama üretimi (değişiklikleri uygula)

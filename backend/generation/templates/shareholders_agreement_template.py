@@ -1,0 +1,1 @@
+# Hissedar sözleşmesi şablonu

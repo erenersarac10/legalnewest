@@ -1,0 +1,1 @@
+# Yayınlayan otorite çıkarma (kurum)

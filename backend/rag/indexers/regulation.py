@@ -1,0 +1,1 @@
+# Yönetmelik indexer (yönetmelik yapısı)

@@ -1,0 +1,1 @@
+# Anayasa Mahkemesi adapter (kararlar)

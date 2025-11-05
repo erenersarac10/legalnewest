@@ -1,0 +1,1 @@
+# NDA şablonu (gizlilik anlaşması)

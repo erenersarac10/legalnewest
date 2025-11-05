@@ -1,0 +1,1 @@
+# KVKK veri kaldırma testleri

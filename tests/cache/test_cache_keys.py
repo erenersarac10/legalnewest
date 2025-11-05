@@ -1,0 +1,1 @@
+# Key collision kontrolleri

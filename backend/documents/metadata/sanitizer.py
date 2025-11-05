@@ -1,0 +1,1 @@
+# Metadata temizleme (PII kaldır)

@@ -1,0 +1,1 @@
+# KVKK ↔ GDPR karşılaştırmalı harita

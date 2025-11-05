@@ -1,0 +1,1 @@
+# Parser escape engelleme

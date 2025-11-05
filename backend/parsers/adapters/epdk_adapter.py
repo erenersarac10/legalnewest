@@ -1,0 +1,1 @@
+# Enerji piyasası adapter (kararlar)

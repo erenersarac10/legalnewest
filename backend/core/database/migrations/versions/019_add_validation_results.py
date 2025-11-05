@@ -1,0 +1,1 @@
+# Doğrulama sonuçları tablosu

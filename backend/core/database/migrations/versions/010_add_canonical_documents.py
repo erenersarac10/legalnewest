@@ -1,0 +1,1 @@
+# Canonical hukuki belge tablosu

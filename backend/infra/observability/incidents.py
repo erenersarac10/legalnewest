@@ -1,0 +1,1 @@
+# Olay yönetimi otomasyonu

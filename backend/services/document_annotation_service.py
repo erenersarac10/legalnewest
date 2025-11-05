@@ -1,0 +1,1 @@
+# Belge işaretleme/yorumlama

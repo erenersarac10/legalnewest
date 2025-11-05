@@ -1,0 +1,1 @@
+# Sözleşme şablonları (yaygın sözleşmeler)

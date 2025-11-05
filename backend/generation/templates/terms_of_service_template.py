@@ -1,0 +1,1 @@
+# Kullanım koşulları sözleşmesi

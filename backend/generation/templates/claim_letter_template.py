@@ -1,0 +1,1 @@
+# Alacak talep yazısı şablonu

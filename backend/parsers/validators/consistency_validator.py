@@ -1,0 +1,1 @@
+# İç tutarlılık (çelişki yok)

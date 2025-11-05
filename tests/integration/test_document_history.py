@@ -1,0 +1,1 @@
+# Versiyon geçmişi kontrolü

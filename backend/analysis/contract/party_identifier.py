@@ -1,0 +1,1 @@
+# Taraf tanımlama (satıcı, alıcı)

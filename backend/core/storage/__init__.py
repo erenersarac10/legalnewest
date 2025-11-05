@@ -1,0 +1,1 @@
+# Storage modül başlatıcı

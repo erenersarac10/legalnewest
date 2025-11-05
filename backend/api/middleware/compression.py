@@ -1,0 +1,1 @@
+# Yanıt sıkıştırma (gzip)

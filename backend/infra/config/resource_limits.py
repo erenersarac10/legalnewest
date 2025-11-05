@@ -1,0 +1,1 @@
+# Container kaynak limitleri

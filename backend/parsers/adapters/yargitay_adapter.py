@@ -1,0 +1,1 @@
+# Yargıtay adapter (içtihatlar)

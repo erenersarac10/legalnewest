@@ -1,0 +1,1 @@
+# Base extractor interface

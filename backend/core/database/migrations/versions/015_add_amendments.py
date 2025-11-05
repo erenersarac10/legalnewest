@@ -1,0 +1,1 @@
+# Hukuki belge değişiklikleri tablosu

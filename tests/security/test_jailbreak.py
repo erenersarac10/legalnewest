@@ -1,0 +1,1 @@
+# Jailbreak yakalama oranı

@@ -1,0 +1,1 @@
+# Adapters modül başlatıcı

@@ -1,0 +1,1 @@
+# Genel proje mimarisi

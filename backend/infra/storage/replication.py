@@ -1,0 +1,1 @@
+# Çok bölgeli veri çoğaltma

@@ -1,0 +1,1 @@
+# Şablon sürüm yönetimi

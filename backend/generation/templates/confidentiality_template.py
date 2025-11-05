@@ -1,0 +1,1 @@
+# Gizlilik anlaşması (NDA varyantı)

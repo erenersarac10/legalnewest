@@ -1,0 +1,1 @@
+# ClamAV entegrasyonu (yüklemeleri tara)

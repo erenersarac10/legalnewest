@@ -1,0 +1,1 @@
+# Rekabet Kurumu adapter (kararlar)

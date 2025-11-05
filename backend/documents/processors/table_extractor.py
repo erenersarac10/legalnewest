@@ -1,0 +1,1 @@
+# Tablo çıkarma (pdfplumber, camelot)

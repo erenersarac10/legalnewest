@@ -1,0 +1,1 @@
+# SaaS hizmet sözleşmesi şablonu

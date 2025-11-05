@@ -1,0 +1,1 @@
+# Soyut şablon render sınıfı

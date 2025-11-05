@@ -1,0 +1,1 @@
+# Metadata şemaları (Dublin Core)

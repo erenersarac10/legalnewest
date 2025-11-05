@@ -1,0 +1,1 @@
+# Telekomünikasyon adapter (düzenlemeler)

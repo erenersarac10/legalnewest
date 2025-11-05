@@ -1,0 +1,1 @@
+# Hukuka uygunluk & domain kontrol

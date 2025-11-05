@@ -1,0 +1,1 @@
+# Temel sözleşme doğrulama sınıfı

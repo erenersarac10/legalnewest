@@ -1,0 +1,1 @@
+# Eski şablona geri dönüş

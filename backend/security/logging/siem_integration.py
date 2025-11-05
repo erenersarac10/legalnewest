@@ -1,0 +1,1 @@
+# SIEM entegrasyonu (Splunk, Elastic)

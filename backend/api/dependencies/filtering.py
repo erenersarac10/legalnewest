@@ -1,0 +1,1 @@
+# Query filtreleme (alan=değer)

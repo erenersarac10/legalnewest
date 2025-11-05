@@ -1,0 +1,1 @@
+# Tesseract + Textract zaman ölçümü

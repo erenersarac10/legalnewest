@@ -1,0 +1,1 @@
+# Sermaye piyasası adapter (tebliğler)

@@ -1,0 +1,1 @@
+# Belge parse kuyruğu tablosu

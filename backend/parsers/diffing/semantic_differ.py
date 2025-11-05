@@ -1,0 +1,1 @@
+# Semantik fark (anlam değişiklikleri)

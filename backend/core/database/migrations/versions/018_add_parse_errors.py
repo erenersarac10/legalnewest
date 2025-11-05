@@ -1,0 +1,1 @@
+# Parse hata logu tablosu

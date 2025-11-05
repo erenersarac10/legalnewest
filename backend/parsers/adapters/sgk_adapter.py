@@ -1,0 +1,1 @@
+# Sosyal Güvenlik adapter (genelgeler)

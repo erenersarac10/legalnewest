@@ -1,0 +1,1 @@
+# Embedding üretimi (cache ile)

@@ -1,0 +1,1 @@
+# Env bazlı yapılandırma

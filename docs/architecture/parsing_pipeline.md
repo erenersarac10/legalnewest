@@ -1,0 +1,1 @@
+# RG → Canonical → Index süreci

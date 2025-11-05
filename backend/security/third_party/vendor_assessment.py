@@ -1,0 +1,1 @@
+# Vendor güvenlik değerlendirme şablonu

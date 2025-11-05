@@ -1,0 +1,1 @@
+# Şema doğrulayıcılar (gerekli alanlar)

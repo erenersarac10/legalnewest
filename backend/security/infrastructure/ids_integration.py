@@ -1,0 +1,1 @@
+# IDS entegrasyonu (Suricata, Snort)

@@ -1,0 +1,1 @@
+# Kimin ne yaptığı loglanır

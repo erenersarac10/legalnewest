@@ -1,0 +1,1 @@
+# Değişken değerleri doldurma işlemi

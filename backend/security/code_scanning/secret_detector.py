@@ -1,0 +1,1 @@
+# Secret detector (TruffleHog, GitLeaks)
