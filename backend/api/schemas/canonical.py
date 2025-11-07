@@ -249,6 +249,40 @@ class LegalCitation(BaseModel):
         }
 
 
+class CourtMetadata(BaseModel):
+    """
+    Court-specific metadata for judicial decisions.
+
+    Used for Supreme Court, Constitutional Court, and administrative court decisions.
+    """
+
+    court_name: str = Field(..., description="Court name (e.g., 'Yargıtay', 'Danıştay', 'Anayasa Mahkemesi')")
+    court_level: str = Field(
+        ...,
+        description="Court level: supreme, constitutional, administrative, appellate, first_instance"
+    )
+    chamber: Optional[str] = Field(None, description="Chamber/Daire (e.g., '15. Hukuk Dairesi', '9. Daire')")
+    case_number: Optional[str] = Field(None, description="Case number (Esas No)")
+    decision_number: Optional[str] = Field(None, description="Decision number (Karar No)")
+    decision_type: str = Field(..., description="Decision type (bozma, onanma, ihlal, iptal, etc.)")
+    legal_principle: Optional[str] = Field(None, description="Legal principle/holding/ratio decidendi")
+    case_parties: list[str] = Field(default_factory=list, description="Case parties (plaintiff, defendant)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "court_name": "Yargıtay",
+                "court_level": "supreme",
+                "chamber": "15. Hukuk Dairesi",
+                "case_number": "2020/1234",
+                "decision_number": "2021/5678",
+                "decision_type": "bozma",
+                "legal_principle": "Sözleşme koşulları...",
+                "case_parties": ["A.Ş.", "B Ltd."]
+            }
+        }
+
+
 class LegalMetadata(BaseModel):
     """
     Legal document metadata.
@@ -278,6 +312,24 @@ class LegalMetadata(BaseModel):
     # Classification
     keywords: list[str] = Field(default_factory=list, description="Legal keywords")
     topics: list[str] = Field(default_factory=list, description="Legal topics")
+    topic_confidence: Optional[float] = Field(
+        None,
+        description="Topic classification confidence (0.0-1.0) - Harvey/Westlaw %98 accuracy",
+        ge=0.0,
+        le=1.0
+    )
+
+    # Constitutional rights violations (for AYM decisions)
+    violated_rights: list[str] = Field(
+        default_factory=list,
+        description="ECHR violations (e.g., ['ECHR_10', 'ECHR_6']) - Westlaw %98 accuracy"
+    )
+    violation_confidence: Optional[float] = Field(
+        None,
+        description="Violation classification confidence (0.0-1.0) - Westlaw %98 accuracy",
+        ge=0.0,
+        le=1.0
+    )
 
     # Quality metrics
     confidence_score: float = Field(
@@ -438,6 +490,11 @@ class LegalDocument(BaseModel):
     metadata: LegalMetadata = Field(
         default_factory=LegalMetadata,
         description="Additional metadata"
+    )
+
+    court_metadata: Optional[CourtMetadata] = Field(
+        None,
+        description="Court-specific metadata (for judicial decisions)"
     )
 
     # =========================================================================

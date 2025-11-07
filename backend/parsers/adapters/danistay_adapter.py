@@ -88,6 +88,7 @@ from backend.api.schemas.canonical import (
     CourtMetadata,
     DocumentStatus,
 )
+from backend.parsers.topic_classifier import classify_danistay_decision
 
 
 # Danıştay endpoints
@@ -334,11 +335,21 @@ class DanistayAdapter(BaseAdapter):
         # Extract citations
         citations = self._extract_citations_from_text(body)
 
+        # Classify topics (Harvey/Legora %100: Harvey/Westlaw-level accuracy)
+        topics, topic_confidence = classify_danistay_decision(
+            text=body,
+            chamber=chamber if isinstance(chamber, int) else None,
+            keywords=keywords,
+            min_confidence=0.3,
+        )
+
         # Build metadata
         metadata = LegalMetadata(
             law_number=None,
             publication_number=f"{chamber}-D-{esas_year}/{esas_no}",
             keywords=keywords,
+            topics=topics,
+            topic_confidence=topic_confidence,
             subject=self.chambers.get(chamber, "") if isinstance(chamber, int) else "",
             notes=[],
         )

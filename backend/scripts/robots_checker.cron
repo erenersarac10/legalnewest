@@ -1,0 +1,33 @@
+# Robots.txt Diff Checker - Cron Job Configuration
+#
+# Harvey/Legora %100: Automated compliance monitoring
+#
+# This cron job runs the robots.txt checker weekly to detect
+# policy changes from legal sources and alert on modifications.
+#
+# Installation:
+#   1. Edit paths below to match your deployment
+#   2. Add to crontab: crontab -e
+#   3. Paste the schedule line below
+#
+# Schedule: Every Sunday at 2:00 AM
+# Format: minute hour day month weekday command
+
+# Weekly robots.txt check (Sunday 2 AM)
+0 2 * * 0 /usr/bin/python3 /home/user/legalnewest/backend/scripts/robots_checker.py >> /home/user/legalnewest/logs/robots_checker.log 2>&1
+
+# Alternative schedules:
+# Daily at 3 AM:
+# 0 3 * * * /usr/bin/python3 /home/user/legalnewest/backend/scripts/robots_checker.py >> /home/user/legalnewest/logs/robots_checker.log 2>&1
+
+# Twice weekly (Sunday and Wednesday at 2 AM):
+# 0 2 * * 0,3 /usr/bin/python3 /home/user/legalnewest/backend/scripts/robots_checker.py >> /home/user/legalnewest/logs/robots_checker.log 2>&1
+
+# Environment variables (set if needed)
+# SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# Notes:
+# - Ensure Python virtual environment is activated if using one
+# - Logs are appended to: logs/robots_checker.log (stdout/stderr)
+# - Changes logged to: logs/robots_changes.log (structured)
+# - robots.txt files stored in: data/robots/{source}.txt
