@@ -118,6 +118,89 @@ class MevzuatGovAdapter(BaseAdapter):
         - 2709: Anayasa (Constitution)
     """
 
+    # =========================================================================
+    # HARVEY/LEGORA %100 PARITE: DATE NORMALIZER
+    # =========================================================================
+
+    @staticmethod
+    def normalize_turkish_date(date_str: str) -> str:
+        """
+        Normalize Turkish date formats to ISO 8601.
+
+        Harvey/Legora %100 parite: Date normalization for temporal accuracy.
+
+        Handles all Turkish date format variants:
+        - 15.06.2023 → 2023-06-15
+        - 15/06/2023 → 2023-06-15
+        - 15 Haziran 2023 → 2023-06-15
+        - 15-06-2023 → 2023-06-15
+
+        Args:
+            date_str: Date string in Turkish format
+
+        Returns:
+            ISO 8601 date string (YYYY-MM-DD)
+
+        Raises:
+            ValueError: Invalid date format
+
+        Example:
+            >>> MevzuatGovAdapter.normalize_turkish_date("15.06.2023")
+            '2023-06-15'
+            >>> MevzuatGovAdapter.normalize_turkish_date("15 Haziran 2023")
+            '2023-06-15'
+        """
+        if not date_str:
+            raise ValueError("Empty date string")
+
+        date_str = date_str.strip()
+
+        # Turkish month names mapping
+        turkish_months = {
+            "ocak": "01", "şubat": "02", "mart": "03", "nisan": "04",
+            "mayıs": "05", "haziran": "06", "temmuz": "07", "ağustos": "08",
+            "eylül": "09", "ekim": "10", "kasım": "11", "aralık": "12",
+        }
+
+        # Format 1: Numeric with separators (15.06.2023, 15/06/2023, 15-06-2023)
+        pattern_numeric = r"^(\d{1,2})[\./-](\d{1,2})[\./-](\d{4})$"
+        match = re.match(pattern_numeric, date_str)
+        if match:
+            day, month, year = match.groups()
+            # Validate
+            if not (1 <= int(day) <= 31 and 1 <= int(month) <= 12):
+                raise ValueError(f"Invalid date components: {date_str}")
+            return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+
+        # Format 2: Turkish month name (15 Haziran 2023)
+        pattern_turkish = r"^(\d{1,2})\s+(\w+)\s+(\d{4})$"
+        match = re.match(pattern_turkish, date_str, re.IGNORECASE)
+        if match:
+            day, month_name, year = match.groups()
+            month_name_lower = month_name.lower()
+
+            if month_name_lower not in turkish_months:
+                raise ValueError(f"Unknown Turkish month: {month_name}")
+
+            month = turkish_months[month_name_lower]
+            # Validate
+            if not (1 <= int(day) <= 31):
+                raise ValueError(f"Invalid day: {day}")
+
+            return f"{year}-{month}-{day.zfill(2)}"
+
+        # Format 3: Already ISO (2023-06-15)
+        pattern_iso = r"^(\d{4})-(\d{1,2})-(\d{1,2})$"
+        match = re.match(pattern_iso, date_str)
+        if match:
+            year, month, day = match.groups()
+            # Validate
+            if not (1 <= int(day) <= 31 and 1 <= int(month) <= 12):
+                raise ValueError(f"Invalid date components: {date_str}")
+            return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+
+        raise ValueError(f"Unrecognized date format: {date_str}")
+
     def __init__(self):
         """Initialize Mevzuat.gov.tr adapter."""
         super().__init__(
