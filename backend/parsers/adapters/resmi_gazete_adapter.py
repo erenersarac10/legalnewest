@@ -200,7 +200,11 @@ class ResmiGazeteAdapter(BaseAdapter):
 
     def _extract_text_from_pdf(self, pdf_content: bytes) -> str:
         """
-        Extract text from PDF using pdfplumber.
+        Extract text from PDF using pdfplumber with OCR fallback.
+
+        Harvey/Legora %100 parite: Dual-path OCR.
+        - Primary: pdfplumber (fast, digital text)
+        - Fallback: pytesseract OCR (scanned/image PDFs)
 
         Args:
             pdf_content: PDF file content
@@ -209,20 +213,31 @@ class ResmiGazeteAdapter(BaseAdapter):
             Extracted text
 
         Raises:
-            ParsingError: Failed to extract text
+            ParsingError: Failed to extract text even with OCR
         """
         try:
             import io
             pdf_file = io.BytesIO(pdf_content)
 
             text_parts = []
+            ocr_used = False
 
             with pdfplumber.open(pdf_file) as pdf:
                 for page_num, page in enumerate(pdf.pages, 1):
                     try:
                         page_text = page.extract_text()
-                        if page_text:
+                        if page_text and page_text.strip():
                             text_parts.append(page_text)
+                        else:
+                            # OCR FALLBACK: Page has no text → try OCR
+                            logger.warning(
+                                f"No text on page {page_num} - attempting OCR",
+                                page=page_num
+                            )
+                            ocr_text = self._ocr_page(page)
+                            if ocr_text and ocr_text.strip():
+                                text_parts.append(ocr_text)
+                                ocr_used = True
                     except Exception as e:
                         logger.warning(
                             f"Failed to extract text from page {page_num}",
@@ -234,14 +249,17 @@ class ResmiGazeteAdapter(BaseAdapter):
 
             if not full_text.strip():
                 raise ParsingError(
-                    message="No text extracted from PDF (may need OCR)",
-                    details={"pages": len(text_parts)}
+                    message="No text extracted from PDF even with OCR",
+                    details={"pages": len(text_parts), "ocr_attempted": ocr_used}
                 )
 
             logger.debug(
-                f"Extracted text from PDF",
-                pages=len(text_parts),
-                text_length=len(full_text),
+                "Extracted text from PDF",
+                extra={
+                    "pages": len(text_parts),
+                    "text_length": len(full_text),
+                    "ocr_used": ocr_used,
+                }
             )
 
             return full_text
@@ -251,6 +269,51 @@ class ResmiGazeteAdapter(BaseAdapter):
                 message=f"Failed to parse PDF: {str(e)}",
                 details={"error": str(e)}
             )
+
+    def _ocr_page(self, page) -> str:
+        """
+        OCR fallback for scanned/image PDF pages.
+
+        Harvey/Legora %100 parite: OCR with pytesseract.
+
+        Args:
+            page: pdfplumber page object
+
+        Returns:
+            OCR-extracted text
+
+        Note:
+            Requires tesseract-ocr installed (apt install tesseract-ocr tesseract-ocr-tur)
+        """
+        try:
+            # Import OCR dependencies (lazy to avoid hard requirement)
+            try:
+                import pytesseract
+                from PIL import Image
+            except ImportError:
+                logger.warning("pytesseract not installed - OCR unavailable")
+                return ""
+
+            # Convert PDF page to image
+            image = page.to_image(resolution=300)  # 300 DPI for quality
+            pil_image = image.original
+
+            # OCR with Turkish language support
+            text = pytesseract.image_to_string(pil_image, lang='tur+eng')
+
+            logger.debug(
+                "OCR completed",
+                extra={"text_length": len(text), "page_size": pil_image.size}
+            )
+
+            return text
+
+        except Exception as e:
+            logger.error(
+                "OCR failed",
+                error=str(e)
+            )
+            return ""
 
     def _extract_metadata_from_text(self, text: str, gazette_date: date) -> dict[str, Any]:
         """

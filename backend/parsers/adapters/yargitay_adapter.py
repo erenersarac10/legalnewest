@@ -115,6 +115,81 @@ class YargitayAdapter(BaseAdapter):
         self.chambers_civil = list(range(1, 24))  # 1-23
         self.chambers_criminal = list(range(1, 20))  # 1-19
 
+    # =========================================================================
+    # HARVEY/LEGORA %100 PARITE: OUTCOME TAGGING
+    # =========================================================================
+
+    @staticmethod
+    def extract_decision_outcome(text: str) -> str:
+        """
+        Extract decision outcome from Yargıtay decision text.
+
+        Harvey/Legora %100 parite: Outcome classification for RAG quality.
+
+        Outcomes (İçtihat types):
+        - onama: Affirm lower court decision
+        - bozma: Reverse and remand
+        - duzelterek_onama: Affirm with modifications
+        - hukum_kurma: Establish new ruling
+        - red: Reject appeal
+        - dava_dusurmesi: Dismiss case
+
+        Args:
+            text: Decision body text
+
+        Returns:
+            Outcome tag (normalized)
+
+        Example:
+            >>> text = "...hükmün ONANMASINA karar verildi..."
+            >>> YargitayAdapter.extract_decision_outcome(text)
+            'onama'
+        """
+        if not text:
+            return "unknown"
+
+        text_upper = text.upper()
+
+        # Outcome patterns (order matters - most specific first)
+        patterns = {
+            "duzelterek_onama": [
+                r"DÜZELTİLEREK\s+ONAMA",
+                r"DÜZELTİLMEK\s+SURETİYLE\s+ONAMA",
+            ],
+            "bozma": [
+                r"BOZULMASINA",
+                r"BOZMA KARARININ\s+ONANMASINA",
+                r"HÜKMÜN\s+BOZULMASINA",
+                r"HÜKMÜN\s+BOZUP",
+            ],
+            "onama": [
+                r"ONANMASINA",
+                r"HÜKMÜN\s+ONANMASINA",
+                r"KARAR\s+ONANMIŞTIR",
+            ],
+            "hukum_kurma": [
+                r"HÜKÜM\s+KURULMAK",
+                r"HÜKÜM\s+KURULMASINA",
+            ],
+            "red": [
+                r"TEMYİZ\s+İSTEMİNİN\s+REDDİNE",
+                r"İSTEMİN\s+REDDİNE",
+                r"REDDİNE\s+KARAR\s+VERİLDİ",
+            ],
+            "dava_dusurmesi": [
+                r"DAVANIN\s+DÜŞMESİNE",
+                r"DÜŞMESİNE\s+KARAR",
+            ],
+        }
+
+        # Check patterns in priority order
+        for outcome, pattern_list in patterns.items():
+            for pattern in pattern_list:
+                if re.search(pattern, text_upper):
+                    return outcome
+
+        return "unknown"
+
     def _parse_document_id(self, document_id: str) -> Dict[str, Any]:
         """
         Parse Yargıtay decision identifier.
