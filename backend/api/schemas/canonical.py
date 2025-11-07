@@ -460,6 +460,20 @@ class LegalDocument(BaseModel):
     )
 
     # =========================================================================
+    # HARVEY/LEGORA %100 PARITE: VERSIONING & IDEMPOTENCY
+    # =========================================================================
+
+    content_hash: Optional[str] = Field(
+        None,
+        description="SHA256 hash of normalized content (law_number + article_id + body) for idempotent versioning"
+    )
+
+    previous_version_id: Optional[str] = Field(
+        None,
+        description="Previous version's content_hash for version chaining (amendment tracking)"
+    )
+
+    # =========================================================================
     # VALIDATORS
     # =========================================================================
 
@@ -664,6 +678,71 @@ class LegalDocument(BaseModel):
                     })
 
         return chunks
+
+    def compute_content_hash(self) -> str:
+        """
+        Compute deterministic SHA256 hash of document content.
+
+        Harvey/Legora %100 parite: Idempotent versioning.
+        - Same content → same hash → deduplication
+        - Different content → different hash → new version
+
+        Hash includes:
+        - Law number (if exists)
+        - All article numbers and content
+        - Normalized body text
+
+        Returns:
+            SHA256 hex digest (64 chars)
+
+        Example:
+            >>> doc = LegalDocument(...)
+            >>> doc.content_hash = doc.compute_content_hash()
+            >>> # Same document fetched twice → same hash → idempotent
+        """
+        import hashlib
+
+        # Normalize content for deterministic hashing
+        law_num = self.metadata.law_number or ""
+        article_ids = "_".join([f"{a.number}:{a.title or ''}" for a in self.articles])
+        body_normalized = self.body.strip().replace("\r\n", "\n")
+
+        # Create deterministic string
+        content_str = f"{law_num}|{article_ids}|{body_normalized}"
+
+        # SHA256 hash
+        return hashlib.sha256(content_str.encode('utf-8')).hexdigest()
+
+    def to_graph_edges(self) -> list[dict[str, str]]:
+        """
+        Export citation graph edges for Neo4j / graph databases.
+
+        Harvey/Legora %100 parite: Knowledge graph integration.
+
+        Returns:
+            List of edge dicts with source, target, type
+
+        Example:
+            >>> edges = doc.to_graph_edges()
+            >>> # [{"source": "6698", "target": "5237", "type": "cites", "article": 5}]
+            >>> # Upload to Neo4j: CREATE (a)-[:CITES]->(b)
+        """
+        edges = []
+
+        for citation in self.citations:
+            if citation.target_law:
+                edge = {
+                    "source": self.metadata.law_number or self.id,
+                    "target": citation.target_law,
+                    "type": citation.citation_type,
+                    "citation_text": citation.citation_text,
+                }
+                if citation.target_article:
+                    edge["target_article"] = citation.target_article
+
+                edges.append(edge)
+
+        return edges
 
     class Config:
         json_schema_extra = {

@@ -440,6 +440,143 @@ class AdapterFactory:
                 if source_key in self._instances:
                     del self._instances[source_key]
 
+    def get_health_matrix(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Get health matrix for all adapters.
+
+        Harvey/Legora %100 parite: Observability.
+
+        Returns health status for each adapter:
+        - Circuit breaker state
+        - Error rate (last 24h)
+        - Last successful fetch
+        - Request count
+        - Cache hit ratio
+
+        Returns:
+            Dict with adapter health data
+
+        Example:
+            >>> health = factory.get_health_matrix()
+            >>> # {
+            >>> #   "resmi_gazete": {
+            >>> #     "status": "healthy",
+            >>> #     "circuit_state": "closed",
+            >>> #     "error_rate_24h": 0.001,
+            >>> #     "last_success": "2025-11-07T12:00:00Z",
+            >>> #     "requests_total": 1234,
+            >>> #     "cache_hit_ratio": 0.85
+            >>> #   }
+            >>> # }
+        """
+        health_matrix = {}
+
+        for source_name, metadata in self._registry.items():
+            # Skip enum duplicates
+            if not isinstance(source_name, str):
+                continue
+
+            # Get adapter instance if cached
+            adapter = self._instances.get(source_name)
+
+            if adapter:
+                # Calculate cache hit ratio
+                total_cache = adapter.cache_hits + adapter.cache_misses
+                cache_ratio = adapter.cache_hits / total_cache if total_cache > 0 else 0.0
+
+                # Calculate error rate
+                total_requests = adapter.request_count + adapter.error_count
+                error_rate = adapter.error_count / total_requests if total_requests > 0 else 0.0
+
+                health_matrix[source_name] = {
+                    "status": adapter.status.value if hasattr(adapter.status, 'value') else str(adapter.status),
+                    "circuit_state": adapter.circuit_breaker.state,
+                    "error_rate": round(error_rate, 4),
+                    "requests_total": adapter.request_count,
+                    "errors_total": adapter.error_count,
+                    "cache_hit_ratio": round(cache_ratio, 4),
+                    "cache_hits": adapter.cache_hits,
+                    "cache_misses": adapter.cache_misses,
+                    "is_enabled": metadata.is_enabled,
+                }
+            else:
+                # Adapter not yet initialized
+                health_matrix[source_name] = {
+                    "status": "not_initialized",
+                    "circuit_state": "closed",
+                    "error_rate": 0.0,
+                    "requests_total": 0,
+                    "errors_total": 0,
+                    "cache_hit_ratio": 0.0,
+                    "is_enabled": metadata.is_enabled,
+                }
+
+        return health_matrix
+
+    def export_manifest(self) -> List[Dict[str, Any]]:
+        """
+        Export adapter manifest for API / documentation.
+
+        Harvey/Legora %100 parite: Adapter manifest.
+
+        Returns:
+            List of adapter capability manifests
+
+        Example:
+            >>> manifest = factory.export_manifest()
+            >>> # [
+            >>> #   {
+            >>> #     "name": "resmi_gazete",
+            >>> #     "source_type": "resmi_gazete",
+            >>> #     "description": "Official Gazette (1920-2025)",
+            >>> #     "version": "1.0",
+            >>> #     "supported_formats": ["PDF"],
+            >>> #     "capabilities": ["historical", "bulk_download"],
+            >>> #     "max_qps": 0.5,
+            >>> #     "date_range": ["1920-01-01", "2025-11-07"],
+            >>> #     "source_urls": ["https://www.resmigazete.gov.tr"],
+            >>> #     "is_enabled": true
+            >>> #   }
+            >>> # ]
+        """
+        manifest = []
+
+        for source_name, metadata in self._registry.items():
+            # Skip enum duplicates
+            if not isinstance(source_name, str):
+                continue
+
+            # Get adapter instance for version info
+            adapter = self._instances.get(source_name)
+            version = getattr(adapter, '__version__', '1.0') if adapter else '1.0'
+
+            entry = {
+                "name": source_name,
+                "source_type": metadata.source_type.value,
+                "description": metadata.description,
+                "version": version,
+                "supported_formats": metadata.supported_formats,
+                "capabilities": [],  # TODO: Add capability detection
+                "requires_auth": metadata.requires_auth,
+                "is_enabled": metadata.is_enabled,
+            }
+
+            # Add date range if available
+            if metadata.date_range:
+                entry["date_range"] = [
+                    metadata.date_range[0].isoformat(),
+                    metadata.date_range[1].isoformat()
+                ]
+
+            # Add rate limit info
+            if adapter:
+                entry["max_qps"] = adapter.rate_limit_per_second
+                entry["base_url"] = adapter.base_url
+
+            manifest.append(entry)
+
+        return manifest
+
 
 # Global factory instance
 _factory = AdapterFactory()
