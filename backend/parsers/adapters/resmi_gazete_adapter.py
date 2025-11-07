@@ -365,7 +365,23 @@ class ResmiGazeteAdapter(BaseAdapter):
         # Download PDF
         pdf_content = await self._download_pdf(pdf_url)
 
-        # Extract text
+        # Compute PDF checksum (SHA256) for change detection and caching
+        # This prevents reprocessing identical PDFs and enables delta sync
+        import hashlib
+        pdf_checksum = hashlib.sha256(pdf_content).hexdigest()
+
+        # Check if we've already processed this exact PDF
+        cache_key = f"rg:checksum:{pdf_checksum}"
+        cached_doc = await self._get_from_cache(cache_key)
+        if cached_doc:
+            logger.info(
+                "PDF already processed (checksum match)",
+                document_id=document_id,
+                checksum=pdf_checksum[:8],
+            )
+            return cached_doc
+
+        # Extract text (only if not cached)
         text = self._extract_text_from_pdf(pdf_content)
 
         # Extract metadata
@@ -383,7 +399,11 @@ class ResmiGazeteAdapter(BaseAdapter):
             "fetch_date": datetime.now(timezone.utc).isoformat(),
             "format": "pdf",
             "size_bytes": len(pdf_content),
+            "checksum": pdf_checksum,  # Store for delta sync
         }
+
+        # Cache processed document by checksum (24h TTL)
+        await self._save_to_cache(cache_key, document)
 
         logger.info(
             "Fetched Resmi Gazete document",
