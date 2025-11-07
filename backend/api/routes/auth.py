@@ -93,6 +93,12 @@ from backend.core.audit import (
 )
 from backend.core.database.session import get_db_session
 from backend.core.logging import get_logger
+from backend.core.auth.security import (
+    validate_password_strength,
+    check_login_rate_limit,
+    check_register_rate_limit,
+    generate_device_fingerprint,
+)
 
 
 logger = get_logger(__name__)
