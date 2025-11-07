@@ -615,6 +615,14 @@ class Permission(Base):
         nullable=False
     )
 
+    # Wildcard support
+    is_pattern: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="True if permission uses wildcards (* pattern matching)"
+    )
+
     # Relationships
     role_permissions: Mapped[List["RolePermission"]] = relationship(
         "RolePermission",

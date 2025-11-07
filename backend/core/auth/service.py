@@ -72,6 +72,7 @@ Usage:
 
 import bcrypt
 import hashlib
+import fnmatch
 from datetime import datetime, timedelta
 from typing import Optional, List, Set, Dict, Any
 from uuid import UUID
@@ -132,23 +133,25 @@ class RBACService:
         self.audit_service = audit_service
 
         # Built-in roles configuration
+        # Harvey/Legora %100: Built-in roles with wildcard support
         self.BUILT_IN_ROLES = {
             "superadmin": {
                 "priority": 1000,
                 "display_name": "Super Administrator",
                 "description": "Platform-wide super admin with all permissions",
-                "permissions": ["*:*"],  # All permissions
+                "permissions": ["*:*"],  # All permissions (wildcard)
             },
             "tenant_admin": {
                 "priority": 900,
                 "display_name": "Tenant Administrator",
                 "description": "Full access within tenant",
                 "permissions": [
-                    "documents:*",
-                    "search:*",
-                    "users:*",
-                    "analytics:*",
-                    "settings:*",
+                    "documents:*",    # All document operations (wildcard)
+                    "search:*",       # All search operations (wildcard)
+                    "users:*",        # All user operations (wildcard)
+                    "analytics:*",    # All analytics operations (wildcard)
+                    "settings:*",     # All settings operations (wildcard)
+                    "audit:*",        # All audit operations (wildcard)
                 ],
             },
             "legal_analyst": {
@@ -158,9 +161,10 @@ class RBACService:
                 "permissions": [
                     "documents:read",
                     "documents:export",
-                    "search:execute",
-                    "search:advanced",
+                    "documents:search",  # Added for clarity
+                    "search:*",          # All search operations (wildcard)
                     "analytics:view",
+                    "analytics:export",
                 ],
             },
             "legal_researcher": {
@@ -170,6 +174,7 @@ class RBACService:
                 "permissions": [
                     "documents:read",
                     "search:execute",
+                    "search:suggest",    # Added for auto-suggest
                 ],
             },
             "viewer": {
@@ -177,7 +182,7 @@ class RBACService:
                 "display_name": "Viewer",
                 "description": "Read-only access",
                 "permissions": [
-                    "documents:read",
+                    "*:read",  # Read-only for all resources (wildcard)
                 ],
             },
         }
@@ -229,11 +234,33 @@ class RBACService:
             if permission in permissions:
                 return True
 
-            # Check wildcard permissions
+            # Check wildcard permissions (pattern matching)
+            # Harvey/Legora %100: Advanced pattern matching with fnmatch
             resource, action = permission.split(":", 1)
 
+            for user_perm in permissions:
+                # Exact match already checked above
+                if user_perm == permission:
+                    continue
+
+                # Check if user permission contains wildcard
+                if "*" in user_perm:
+                    # Use fnmatch for pattern matching
+                    # Supports: documents:*, *:read, doc*:read, etc.
+                    if fnmatch.fnmatch(permission, user_perm):
+                        logger.debug(
+                            f"Permission granted via pattern match: "
+                            f"'{permission}' matches '{user_perm}'"
+                        )
+                        return True
+
+            # Legacy wildcard support (backward compatibility)
             # Check resource:* wildcard
             if f"{resource}:*" in permissions:
+                return True
+
+            # Check *:action wildcard
+            if f"*:{action}" in permissions:
                 return True
 
             # Check *:* wildcard (superadmin-like)
@@ -540,11 +567,21 @@ class RBACService:
         """
         Get or create permission.
 
+        Harvey/Legora %100: Auto-detects wildcard patterns.
+
         Args:
-            permission_code: Permission code (resource:action)
+            permission_code: Permission code (resource:action or pattern)
 
         Returns:
             Permission: Permission object
+
+        Example:
+            >>> perm = await rbac.get_or_create_permission("documents:*")
+            >>> perm.is_pattern
+            True
+            >>> perm = await rbac.get_or_create_permission("documents:read")
+            >>> perm.is_pattern
+            False
         """
         # Try to get existing
         result = await self.db_session.execute(
@@ -556,14 +593,23 @@ class RBACService:
 
         # Create new
         resource, action = permission_code.split(":", 1)
+
+        # Auto-detect if this is a pattern (contains wildcard)
+        is_pattern = "*" in permission_code
+
         perm = Permission(
             resource=resource,
             action=action,
             code=permission_code,
             scope=PermissionScopeEnum.TENANT,
+            is_pattern=is_pattern,
         )
         self.db_session.add(perm)
         await self.db_session.flush()
+
+        logger.info(
+            f"Created {'pattern' if is_pattern else 'exact'} permission: {permission_code}"
+        )
 
         return perm
 
