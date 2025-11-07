@@ -15,10 +15,9 @@ belge işleme, AI analizi, OCR, metadata extraction ve güvenli belge paylaşım
 BÖLÜMLER
 --------
 1. Enums (Sabitler)
-   - DocumentType: Belge tipleri (Mahkeme Kararı, Dilekçe, Sözleşme, vb.)
-   - ProcessingStatus: İşlem durumu (UPLOADED → PROCESSING → COMPLETED)
-   - AccessLevel: Erişim seviyesi (PRIVATE, TENANT, PUBLIC)
-   - DocumentCategory: Belge kategorisi (LITIGATION, CONTRACT, COMPLIANCE, vb.)
+   - DocumentType: Belge tipleri (12 types - EXACT database match)
+   - ProcessingStatus: İşlem durumu (5 states - EXACT database match)
+   - AccessLevel: Erişim seviyesi (5 levels - EXACT database match)
 
 2. Document CRUD Schemas
    - DocumentCreate: Yeni belge yükleme
@@ -57,99 +56,71 @@ BÖLÜMLER
    - DocumentSearchRequest: Gelişmiş arama
    - SearchResult: Arama sonucu
 
-TÜRK HUKUK SİSTEMİNDE BELGE TİPLERİ
-----------------------------------
+TÜRK HUKUK SİSTEMİNDE BELGE TİPLERİ (12 Types - EXACT Database Match)
+===================================================================
 
-Mahkeme Belgeleri (Court Documents):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-1. COURT_DECISION (Mahkeme Kararı)
-   - İlk derece mahkeme kararları
-   - Temyiz/istinaf kararları
-   - Kesinleşmiş kararlar
-   - Örnek: "Ankara 5. Asliye Hukuk Mahkemesi 2024/123 Esas Sayılı Karar"
-
-2. PETITION (Dilekçe/İddia)
-   - Dava dilekçesi
-   - Cevap dilekçesi
-   - Temyiz dilekçesi
-   - İstinaf dilekçesi
-   - Örnek: "İş Akdinin İptali Talebi Hakkında Dava Dilekçesi"
-
-3. COURT_RULING (Ara Karar/Usul Kararı)
-   - Bilirkişi tayini
-   - Tanık dinleme
-   - Delil tespiti
-   - Duruşma ertelemesi
-
-4. INDICTMENT (İddianame)
-   - Ceza davaları için savcılık iddianamesi
-   - Suç tasnifi, deliller, talep edilen ceza
-
-İcra/İflas Belgeleri (Enforcement Documents):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-5. EXECUTION_ORDER (İcra Emri)
-   - Ödeme emri
-   - Haciz kararı
-   - İhtiyati tedbir
-   - Taşınmaz satış kararı
-
-6. ENFORCEMENT_FILE (İcra Takip Dosyası)
-   - İlamlı/ilamsız icra
-   - Takip tarihi, borç tutarı
-   - Haciz tutanakları
-
-Sözleşmeler (Contracts):
-~~~~~~~~~~~~~~~~~~~~~~
-7. CONTRACT (Sözleşme)
+1. CONTRACT (Sözleşme)
    - İş sözleşmesi
    - Kira sözleşmesi
    - Alım-satım sözleşmesi
    - Hizmet sözleşmesi
    - Gizlilik sözleşmesi (NDA)
 
-8. AGREEMENT (Protokol/Mutabakat)
-   - Taraflar arası anlaşma
-   - Uzlaşma tutanağı
-   - Protokol
+2. PETITION (Dilekçe)
+   - Dava dilekçesi
+   - Cevap dilekçesi
+   - Temyiz dilekçesi
+   - İstinaf dilekçesi
+   - Örnek: "İş Akdinin İptali Talebi Hakkında Dava Dilekçesi"
 
-Resmi Belgeler (Official Documents):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-9. NOTARIZED_DOCUMENT (Noterde Tanzim)
-   - Noter onaylı sözleşmeler
-   - Vekaletnameler
-   - Beyannameler
+3. COURT_DECISION (Mahkeme Kararı)
+   - İlk derece mahkeme kararları
+   - Temyiz/istinaf kararları
+   - Kesinleşmiş kararlar
+   - Örnek: "Ankara 5. Asliye Hukuk Mahkemesi 2024/123 Esas Sayılı Karar"
 
-10. POWER_OF_ATTORNEY (Vekaletname)
-    - Genel vekaletname
-    - Özel vekaletname
-    - Avukatlık vekaleti
+4. LEGAL_OPINION (Hukuki Görüş)
+   - Danışmanlık mektubu
+   - İnceleme raporu
+   - Hukuki değerlendirme
 
-11. OFFICIAL_LETTER (Resmi Yazı)
-    - Kamu kurum yazıları
-    - Bakanlık yazıları
-    - Belediye yazıları
+5. POWER_OF_ATTORNEY (Vekaletname)
+   - Genel vekaletname
+   - Özel vekaletname
+   - Avukatlık vekaleti
 
-Danışmanlık Belgeleri (Advisory Documents):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-12. LEGAL_OPINION (Hukuki Görüş)
-    - Danışmanlık mektubu
+6. REGULATION (Düzenleme/Mevzuat)
+   - Kanun, KHK, Yönetmelik
+   - Tebliğ, Genelge
+   - Resmi Gazete yayınları
+
+7. CORRESPONDENCE (Yazışma)
+   - Resmi yazılar
+   - E-posta yazışmaları
+   - İhtar/İhtarname
+
+8. INVOICE (Fatura)
+   - Ticari fatura
+   - Avukatlık ücreti faturası
+   - Harcama belgeleri
+
+9. PROTOCOL (Protokol/Tutanak)
+   - Duruşma tutanağı
+   - Tespit tutanağı
+   - Toplantı protokolü
+
+10. REPORT (Rapor)
+    - Bilirkişi raporu
     - İnceleme raporu
-    - Hukuki değerlendirme
+    - Değerlendirme raporu
 
-13. MEMO (Hukuki Not/Memo)
-    - İç yazışmalar
-    - Dosya notları
-    - Duruşma notları
-
-Diğer Belgeler (Other Documents):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-14. EVIDENCE (Delil)
-    - Fatura, makbuz
+11. EVIDENCE (Delil)
     - Fotoğraf, video
-    - E-posta yazışmaları
     - Ses kayıtları
+    - Fiziksel deliller
+    - Dijital kanıtlar
 
-15. OTHER (Diğer)
+12. OTHER (Diğer)
     - Kategorize edilmemiş belgeler
 
 BELGE İŞLEME PIPELINE'I (DOCUMENT PROCESSING)
@@ -192,30 +163,35 @@ BELGE İŞLEME PIPELINE'I (DOCUMENT PROCESSING)
 
 Processing Status Lifecycle:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-UPLOADED → SCANNING → EXTRACTING → ANALYZING → INDEXING → COMPLETED
-                ↓                      ↓
-              FAILED               FAILED
+UPLOADED → PROCESSING → COMPLETED → INDEXED
+                ↓
+              FAILED
 
 ERİŞİM KONTROLÜ & GÜVENLİK (ACCESS CONTROL & SECURITY)
 -----------------------------------------------------
 
-Erişim Seviyeleri (Access Levels):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Erişim Seviyeleri (Access Levels) - EXACT database match:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1. PRIVATE (Özel)
    - Sadece belge sahibi erişebilir
-   - Yükleyen kullanıcı + Admin
+   - Owner only + Admin
 
-2. TENANT (Kiracı)
-   - Tenant içindeki tüm yetkili kullanıcılar erişebilir
+2. TEAM (Ekip)
+   - Ekip üyeleri erişebilir
+   - Belirli bir takıma atanmış kullanıcılar
+   - Örnek: Aynı davayı takip eden avukatlar
+
+3. ORGANIZATION (Organizasyon)
+   - Organizasyon üyeleri erişebilir
+   - Daha geniş organizasyon erişimi
+   - Örnek: Bölüm veya departman düzeyinde
+
+4. TENANT (Kiracı)
+   - Tenant içindeki TÜM kullanıcılar erişebilir
    - Role-based access control (RBAC)
-   - Örnek: Hukuk bürosu içindeki tüm avukatlar
+   - Örnek: Hukuk bürosu içindeki herkes
 
-3. SHARED (Paylaşılmış)
-   - Belirli kullanıcılarla paylaşılmış
-   - Paylaşım linki ile erişim
-   - Zaman sınırlı paylaşım
-
-4. PUBLIC (Genel)
+5. PUBLIC (Genel)
    - Kamuya açık içtihatlar
    - Yargıtay kararları
    - Mevzuat metinleri
@@ -394,7 +370,6 @@ from api.schemas.document import DocumentCreate, DocumentType, AccessLevel
 doc_data = DocumentCreate(
     title="Ankara 5. Asliye Hukuk Mahkemesi Kararı",
     document_type=DocumentType.COURT_DECISION,
-    category=DocumentCategory.LITIGATION,
     access_level=AccessLevel.TENANT,
     tags=["mahkeme-kararı", "iş-hukuku", "kıdem-tazminatı"],
     case_number="2024/123 Esas, 2024/456 Karar",
@@ -405,7 +380,7 @@ doc_data = DocumentCreate(
 # File upload (multipart/form-data)
 files = {"file": open("mahkeme_karari.pdf", "rb")}
 response = await client.post("/api/v1/documents", data=doc_data.dict(), files=files)
-# Processing başlar: UPLOADED → SCANNING → EXTRACTING → ANALYZING → COMPLETED
+# Processing başlar: UPLOADED → PROCESSING → COMPLETED → INDEXED
 ```
 
 2. AI Analiz Talebi (AI Analysis Request):
@@ -557,107 +532,81 @@ from .base import (
 
 class DocumentType(str, Enum):
     """
-    Belge tipleri (Türk hukuk sistemi).
+    Turkish legal document type classifications.
 
-    Attributes:
-        COURT_DECISION: Mahkeme kararı
-        PETITION: Dilekçe/İddia
-        COURT_RULING: Ara karar/Usul kararı
-        INDICTMENT: İddianame
-        EXECUTION_ORDER: İcra emri
-        ENFORCEMENT_FILE: İcra takip dosyası
-        CONTRACT: Sözleşme
-        AGREEMENT: Protokol/Mutabakat
-        NOTARIZED_DOCUMENT: Noterde tanzim
-        POWER_OF_ATTORNEY: Vekaletname
-        OFFICIAL_LETTER: Resmi yazı
-        LEGAL_OPINION: Hukuki görüş
-        MEMO: Hukuki not/Memo
-        EVIDENCE: Delil (fatura, makbuz, fotoğraf)
-        OTHER: Diğer
+    EXACT MATCH with database model (backend/core/database/models/document.py)
+
+    Types:
+    - CONTRACT: Sözleşme (employment, service, partnership)
+    - PETITION: Dilekçe (court petitions, applications)
+    - COURT_DECISION: Mahkeme kararı (judgments, verdicts)
+    - LEGAL_OPINION: Hukuki görüş (legal memos, opinions)
+    - POWER_OF_ATTORNEY: Vekaletname
+    - REGULATION: Düzenleme (laws, regulations, circulars)
+    - CORRESPONDENCE: Yazışma (letters, emails)
+    - INVOICE: Fatura
+    - PROTOCOL: Protokol/Tutanak
+    - REPORT: Rapor
+    - EVIDENCE: Delil
+    - OTHER: Diğer
     """
-    COURT_DECISION = "court_decision"
-    PETITION = "petition"
-    COURT_RULING = "court_ruling"
-    INDICTMENT = "indictment"
-    EXECUTION_ORDER = "execution_order"
-    ENFORCEMENT_FILE = "enforcement_file"
-    CONTRACT = "contract"
-    AGREEMENT = "agreement"
-    NOTARIZED_DOCUMENT = "notarized_document"
-    POWER_OF_ATTORNEY = "power_of_attorney"
-    OFFICIAL_LETTER = "official_letter"
-    LEGAL_OPINION = "legal_opinion"
-    MEMO = "memo"
-    EVIDENCE = "evidence"
-    OTHER = "other"
+    CONTRACT = "contract"                      # Sözleşme
+    PETITION = "petition"                      # Dilekçe
+    COURT_DECISION = "court_decision"          # Mahkeme Kararı
+    LEGAL_OPINION = "legal_opinion"            # Hukuki Görüş
+    POWER_OF_ATTORNEY = "power_of_attorney"    # Vekaletname
+    REGULATION = "regulation"                  # Düzenleme/Mevzuat
+    CORRESPONDENCE = "correspondence"          # Yazışma
+    INVOICE = "invoice"                        # Fatura
+    PROTOCOL = "protocol"                      # Protokol/Tutanak
+    REPORT = "report"                          # Rapor
+    EVIDENCE = "evidence"                      # Delil
+    OTHER = "other"                            # Diğer
 
 
 class ProcessingStatus(str, Enum):
     """
-    Belge işleme durumu (pipeline status).
+    Document processing status.
+
+    EXACT MATCH with database model (backend/core/database/models/document.py)
 
     Status Lifecycle:
-        UPLOADED → SCANNING → EXTRACTING → ANALYZING → INDEXING → COMPLETED
-                       ↓            ↓           ↓
-                     FAILED       FAILED      FAILED
+        UPLOADED → PROCESSING → COMPLETED → INDEXED
+                       ↓
+                     FAILED
 
     Attributes:
-        UPLOADED: Yüklendi, işlem bekliyor
-        SCANNING: Virus taraması yapılıyor
-        EXTRACTING: Metin çıkarma (OCR) yapılıyor
-        ANALYZING: AI analizi yapılıyor
-        INDEXING: Arama indexi oluşturuluyor
-        COMPLETED: İşlem tamamlandı
-        FAILED: İşlem başarısız
+        UPLOADED: File uploaded, pending processing
+        PROCESSING: OCR, extraction in progress
+        COMPLETED: Processing completed successfully
+        FAILED: Processing failed
+        INDEXED: Indexed for RAG retrieval
     """
     UPLOADED = "uploaded"
-    SCANNING = "scanning"
-    EXTRACTING = "extracting"
-    ANALYZING = "analyzing"
-    INDEXING = "indexing"
+    PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+    INDEXED = "indexed"
 
 
 class AccessLevel(str, Enum):
     """
-    Belge erişim seviyesi.
+    Document access level.
+
+    EXACT MATCH with database model (backend/core/database/models/document.py)
 
     Attributes:
-        PRIVATE: Sadece belge sahibi
-        TENANT: Tenant içindeki yetkili kullanıcılar
-        SHARED: Belirli kullanıcılarla paylaşılmış
-        PUBLIC: Kamuya açık (içtihatlar, mevzuat)
+        PRIVATE: Owner only
+        TEAM: Team members
+        ORGANIZATION: Organization members
+        TENANT: All tenant users
+        PUBLIC: Public (rare)
     """
     PRIVATE = "private"
+    TEAM = "team"
+    ORGANIZATION = "organization"
     TENANT = "tenant"
-    SHARED = "shared"
     PUBLIC = "public"
-
-
-class DocumentCategory(str, Enum):
-    """
-    Belge kategorisi (high-level classification).
-
-    Attributes:
-        LITIGATION: Dava/Uyuşmazlık belgeleri
-        CONTRACT: Sözleşmeler
-        COMPLIANCE: Uyum/Compliance belgeleri
-        ADVISORY: Danışmanlık belgeleri
-        ENFORCEMENT: İcra/İflas belgeleri
-        CORPORATE: Kurumsal belgeler
-        EVIDENCE: Deliller
-        OTHER: Diğer
-    """
-    LITIGATION = "litigation"
-    CONTRACT = "contract"
-    COMPLIANCE = "compliance"
-    ADVISORY = "advisory"
-    ENFORCEMENT = "enforcement"
-    CORPORATE = "corporate"
-    EVIDENCE = "evidence"
-    OTHER = "other"
 
 
 # ============================================================================
@@ -673,7 +622,6 @@ class DocumentCreate(RequestSchema, TenantSchema):
     Attributes:
         title: Belge başlığı
         document_type: Belge tipi
-        category: Belge kategorisi
         access_level: Erişim seviyesi (varsayılan: PRIVATE)
         description: Belge açıklaması (opsiyonel)
         tags: Etiketler (arama için)
@@ -692,7 +640,6 @@ class DocumentCreate(RequestSchema, TenantSchema):
         >>> doc = DocumentCreate(
         ...     title="Ankara 5. Asliye Hukuk Mahkemesi Kararı",
         ...     document_type=DocumentType.COURT_DECISION,
-        ...     category=DocumentCategory.LITIGATION,
         ...     access_level=AccessLevel.TENANT,
         ...     tags=["mahkeme", "iş-hukuku"],
         ...     case_number="2024/123 Esas",
@@ -708,10 +655,6 @@ class DocumentCreate(RequestSchema, TenantSchema):
     document_type: DocumentType = Field(
         ...,
         description="Belge tipi"
-    )
-    category: DocumentCategory = Field(
-        ...,
-        description="Belge kategorisi"
     )
     access_level: AccessLevel = Field(
         default=AccessLevel.PRIVATE,
@@ -776,7 +719,6 @@ class DocumentUpdate(RequestSchema):
     Attributes:
         title: Yeni başlık
         document_type: Yeni belge tipi
-        category: Yeni kategori
         access_level: Yeni erişim seviyesi
         description: Yeni açıklama
         tags: Yeni etiketler
@@ -793,10 +735,6 @@ class DocumentUpdate(RequestSchema):
     document_type: Optional[DocumentType] = Field(
         None,
         description="Belge tipi"
-    )
-    category: Optional[DocumentCategory] = Field(
-        None,
-        description="Belge kategorisi"
     )
     access_level: Optional[AccessLevel] = Field(
         None,
@@ -857,7 +795,6 @@ class DocumentResponse(ResponseSchema, IdentifierSchema, TimestampSchema, Tenant
         id: Belge UUID
         title: Başlık
         document_type: Belge tipi
-        category: Kategori
         access_level: Erişim seviyesi
         file_name: Dosya adı
         file_size_bytes: Dosya boyutu (bytes)
@@ -870,7 +807,6 @@ class DocumentResponse(ResponseSchema, IdentifierSchema, TimestampSchema, Tenant
     """
     title: str = Field(..., description="Belge başlığı")
     document_type: DocumentType = Field(..., description="Belge tipi")
-    category: DocumentCategory = Field(..., description="Kategori")
     access_level: AccessLevel = Field(..., description="Erişim seviyesi")
     file_name: str = Field(..., description="Dosya adı")
     file_size_bytes: int = Field(..., ge=0, description="Dosya boyutu")
@@ -887,7 +823,6 @@ class DocumentResponse(ResponseSchema, IdentifierSchema, TimestampSchema, Tenant
                 "tenant_id": "650e8400-e29b-41d4-a716-446655440001",
                 "title": "Ankara 5. Asliye Hukuk Mahkemesi Kararı",
                 "document_type": "court_decision",
-                "category": "litigation",
                 "access_level": "tenant",
                 "file_name": "mahkeme_karari_2024_123.pdf",
                 "file_size_bytes": 2457600,
@@ -1158,7 +1093,6 @@ class DocumentFilterParams(BaseSchema):
 
     Attributes:
         document_types: Belge tipleri filtresi
-        categories: Kategori filtresi
         access_levels: Erişim seviyeleri
         processing_statuses: İşlem durumları
         tags: Etiket filtresi
@@ -1172,10 +1106,6 @@ class DocumentFilterParams(BaseSchema):
     document_types: Optional[List[DocumentType]] = Field(
         None,
         description="Belge tipleri"
-    )
-    categories: Optional[List[DocumentCategory]] = Field(
-        None,
-        description="Kategoriler"
     )
     access_levels: Optional[List[AccessLevel]] = Field(
         None,
@@ -1278,7 +1208,6 @@ __all__ = [
     "DocumentType",
     "ProcessingStatus",
     "AccessLevel",
-    "DocumentCategory",
     # CRUD
     "DocumentCreate",
     "DocumentUpdate",
