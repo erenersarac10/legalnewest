@@ -597,6 +597,7 @@ from backend.api.schemas.base import (
 class UserRole(str, Enum):
     """
     User roles with hierarchical permissions.
+    EXACT MATCH with database model (backend/core/database/models/user.py)
 
     Roles (ascending privilege):
     - CITIZEN: Basic user
@@ -618,6 +619,7 @@ class UserRole(str, Enum):
 class AccountStatus(str, Enum):
     """
     Account status lifecycle.
+    EXACT MATCH with database model (backend/core/database/models/user.py)
 
     States:
     - PENDING: Email verification pending
@@ -637,6 +639,7 @@ class AccountStatus(str, Enum):
 class ProfessionType(str, Enum):
     """
     Turkish legal profession types.
+    EXACT MATCH with database model (backend/core/database/models/user.py)
 
     Professional categories for legal sector users.
     """
@@ -649,7 +652,6 @@ class ProfessionType(str, Enum):
     ENFORCEMENT_OFFICER = "enforcement_officer"  # İcra Müdürü
     LEGAL_EXPERT = "legal_expert"  # Bilirkişi
     LAW_STUDENT = "law_student"  # Hukuk Öğrencisi
-    OTHER = "other"  # Diğer
 
 
 # =============================================================================

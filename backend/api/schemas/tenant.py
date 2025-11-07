@@ -558,6 +558,7 @@ from .base import (
 class SubscriptionPlan(str, Enum):
     """
     Abonelik planları (subscription tiers).
+    EXACT MATCH with database model (backend/core/database/models/tenant.py)
 
     Plan Hiyerarşisi:
         FREE < TRIAL < STARTER < PROFESSIONAL < ENTERPRISE < CUSTOM
@@ -581,50 +582,52 @@ class SubscriptionPlan(str, Enum):
 class TenantStatus(str, Enum):
     """
     Tenant durumları (lifecycle states).
+    EXACT MATCH with database model (backend/core/database/models/tenant.py)
 
     Status Lifecycle:
-        TRIAL → ACTIVE ⟷ PAST_DUE → SUSPENDED → CANCELLED
+        TRIAL → ACTIVE → SUSPENDED → CANCELLED
                    ↓
               EXPIRED (trial bitişi)
 
     Attributes:
-        TRIAL: Deneme süresi (14 gün)
         ACTIVE: Aktif abonelik
-        PAST_DUE: Ödeme gecikmesi (7 gün grace period)
+        TRIAL: Deneme süresi (14 gün)
         SUSPENDED: Askıya alındı (ödeme veya kota ihlali)
-        CANCELLED: İptal edildi (kullanıcı veya admin)
         EXPIRED: Süresi doldu (trial bitişi)
+        CANCELLED: İptal edildi (kullanıcı veya admin)
     """
-    TRIAL = "trial"
     ACTIVE = "active"
-    PAST_DUE = "past_due"
+    TRIAL = "trial"
     SUSPENDED = "suspended"
-    CANCELLED = "cancelled"
     EXPIRED = "expired"
+    CANCELLED = "cancelled"
 
 
 class OrganizationType(str, Enum):
     """
     Organizasyon tipleri (Türk hukuk sistemi).
+    EXACT MATCH with database model (backend/core/database/models/tenant.py)
 
     Attributes:
         LAW_FIRM: Hukuk bürosu (avukatlık ortaklığı)
-        BAR_ASSOCIATION: Baro (il barosu)
         CORPORATE_LEGAL: Şirket hukuk departmanı
-        COURT: Mahkeme/Adliye
         PUBLIC_INSTITUTION: Kamu kurumu (bakanlık, belediye)
-        LEGAL_CONSULTANCY: Hukuk danışmanlık firması
+        COURT: Mahkeme/Adliye
+        PROSECUTORS_OFFICE: Savcılık
         NOTARY: Noterlik
+        BAR_ASSOCIATION: Baro (il barosu)
         INDIVIDUAL: Bireysel kullanıcı
+        OTHER: Diğer
     """
     LAW_FIRM = "law_firm"
-    BAR_ASSOCIATION = "bar_association"
     CORPORATE_LEGAL = "corporate_legal"
-    COURT = "court"
     PUBLIC_INSTITUTION = "public_institution"
-    LEGAL_CONSULTANCY = "legal_consultancy"
+    COURT = "court"
+    PROSECUTORS_OFFICE = "prosecutors_office"
     NOTARY = "notary"
+    BAR_ASSOCIATION = "bar_association"
     INDIVIDUAL = "individual"
+    OTHER = "other"
 
 
 class BillingCycle(str, Enum):

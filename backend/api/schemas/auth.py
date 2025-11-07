@@ -469,9 +469,13 @@ from backend.api.schemas.base import (
 
 
 class TokenType(str, Enum):
-    """JWT token types."""
+    """
+    OAuth token types.
+    EXACT MATCH with database model (backend/core/database/models/oauth_token.py)
+    """
 
     BEARER = "bearer"
+    MAC = "mac"
 
 
 class MFAMethod(str, Enum):
