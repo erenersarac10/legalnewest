@@ -1,0 +1,217 @@
+{"term":"anayasa","synonyms":["kanun-i esasi","temel kanun","constitution","başkanun"],"category":"constitutional","frequency":9500}
+{"term":"mahkeme","synonyms":["divan","heyet","kurul","court","muhakeme mercii"],"category":"judicial","frequency":12000}
+{"term":"karar","synonyms":["hüküm","içtihat","emsal","karine","judgment","decision"],"category":"judicial","frequency":15000}
+{"term":"fesih","synonyms":["sona erme","iptal","bozma","irtifak","termination","cancellation"],"category":"contractual","frequency":3200}
+{"term":"tebliğ","synonyms":["tebligat","ihbar","duyuru","ihtar","notification","notice"],"category":"procedural","frequency":5600}
+{"term":"ceza","synonyms":["müeyyide","yaptırım","hapishane","tutuklama","punishment","sanction"],"category":"criminal","frequency":8900}
+{"term":"taraf","synonyms":["lehtar","davacı","davalı","party","hak sahibi"],"category":"procedural","frequency":11000}
+{"term":"sözleşme","synonyms":["mukavele","akit","kontrat","contract","misak"],"category":"contractual","frequency":7800}
+{"term":"şahadet","synonyms":["tanıklık","şahitlik","ifade","beyan","testimony","witness"],"category":"evidentiary","frequency":4200}
+{"term":"delil","synonyms":["kanıt","vesika","belge","ispat","evidence","proof"],"category":"evidentiary","frequency":6700}
+{"term":"dava","synonyms":["uyuşmazlık","anlaşmazlık","ihtilaf","niza","lawsuit","case"],"category":"procedural","frequency":14000}
+{"term":"hukuk","synonyms":["kanun","nizam","şeriat","kaide","law","legal"],"category":"general","frequency":18000}
+{"term":"adalet","synonyms":["hakkaniyet","insaf","eşitlik","justice","fairness"],"category":"general","frequency":5300}
+{"term":"temyiz","synonyms":["istinaf","itiraz","appeal","revision","nakz"],"category":"procedural","frequency":7200}
+{"term":"iddianame","synonyms":["suç isnadı","isnat","ithaf","indictment","accusation"],"category":"criminal","frequency":3800}
+{"term":"beraat","synonyms":["aklanma","masumiyet","ibra","acquittal","exoneration"],"category":"criminal","frequency":2900}
+{"term":"mahkumiyet","synonyms":["ceza","hapis","mahkum","conviction","condemnation"],"category":"criminal","frequency":6100}
+{"term":"infaz","synonyms":["icra","tatbik","uygulama","icraat","execution","enforcement"],"category":"criminal","frequency":4500}
+{"term":"kesin hüküm","synonyms":["res judicata","确定判决","final judgment","确定裁判","nihai karar"],"category":"procedural","frequency":3400}
+{"term":"ön inceleme","synonyms":["ön tahkikat","soruşturma","preliminary investigation","araştırma"],"category":"procedural","frequency":2800}
+{"term":"kovuşturma","synonyms":["takibat","soruşturma","prosecution","dava takibi"],"category":"criminal","frequency":5200}
+{"term":"tutuklama","synonyms":["tevkif","gözaltı","nezaret","detention","arrest"],"category":"criminal","frequency":4800}
+{"term":"salıverme","synonyms":["tahliye","serbest bırakma","release","affetme"],"category":"criminal","frequency":2100}
+{"term":"af","synonyms":["özel af","genel af","pardon","amnesty","affedilme"],"category":"criminal","frequency":1600}
+{"term":"zamanaşımı","synonyms":["müruru zaman","süre aşımı","statute of limitations","hak düşümü"],"category":"general","frequency":4300}
+{"term":"hak","synonyms":["salahiyet","yetki","mezuniyet","right","authority"],"category":"general","frequency":16000}
+{"term":"yükümlülük","synonyms":["vecibe","ödev","responsibility","obligation","borç"],"category":"general","frequency":7900}
+{"term":"sorumluluk","synonyms":["mesuliyet","taahhüt","liability","responsibility","kefalet"],"category":"general","frequency":9200}
+{"term":"zarar","synonyms":["ziyan","hasar","damage","loss","tahribat"],"category":"tort","frequency":8600}
+{"term":"tazminat","synonyms":["zarar karşılığı","bedel","compensation","damages","ödeme"],"category":"tort","frequency":10500}
+{"term":"kusur","synonyms":["hata","ihmal","kasıt","fault","negligence"],"category":"tort","frequency":6800}
+{"term":"mücbir sebep","synonyms":["force majeure","zorlayıcı neden","kaçınılmazlık","irresistible force"],"category":"contractual","frequency":2700}
+{"term":"iyiniyet","synonyms":["hüsnüniyet","good faith","doğruluk","dürüstlük"],"category":"general","frequency":5100}
+{"term":"kötüniyet","synonyms":["bad faith","suiniyet","hilekarlık","dolandırıcılık"],"category":"general","frequency":3300}
+{"term":"sahtecilik","synonyms":["forgery","sahtekarlık","tahrif","falsification","hilekarlık"],"category":"criminal","frequency":2400}
+{"term":"dolandırıcılık","synonyms":["fraud","hilecilik","sahtekarlık","deception","aldatma"],"category":"criminal","frequency":4100}
+{"term":"zimmet","synonyms":["embezzlement","iختلاس","suiistimal","kötüye kullanma"],"category":"criminal","frequency":2600}
+{"term":"rüşvet","synonyms":["bribery","corruption","irtikap","مَرتَشَة"],"category":"criminal","frequency":3500}
+{"term":"gasp","synonyms":["yağma","robbery","soygun","haydutluk","talanim"],"category":"criminal","frequency":1900}
+{"term":"hırsızlık","synonyms":["theft","sirkat","çalma","larceny","سرقة"],"category":"criminal","frequency":3700}
+{"term":"cinayet","synonyms":["murder","homicide","katil","قتل","adam öldürme"],"category":"criminal","frequency":5400}
+{"term":"müdafi","synonyms":["savunman","avukat","vekil","defense lawyer","counsel"],"category":"procedural","frequency":4600}
+{"term":"savcı","synonyms":["prosecutor","iddianame sahibi","cumhuriyet savcısı","نيابة"],"category":"procedural","frequency":7300}
+{"term":"hakim","synonyms":["yargıç","judge","قاضي","hâkem","muhakeme"],"category":"judicial","frequency":9800}
+{"term":"jüri","synonyms":["jury","halk heyet","присяжные","民众陪审团"],"category":"procedural","frequency":800}
+{"term":"bilirkişi","synonyms":["expert","uzman","مخبر","eksper","mütehassıs"],"category":"evidentiary","frequency":5900}
+{"term":"şikayet","synonyms":["complaint","şikayette","grievance","yakınma","عريضة"],"category":"procedural","frequency":6400}
+{"term":"dilekçe","synonyms":["petition","arz","istida","application","عريضة"],"category":"procedural","frequency":4900}
+{"term":"duruşma","synonyms":["trial","hearing","oturum","muhakeme","审讯"],"category":"procedural","frequency":8100}
+{"term":"keşif","synonyms":["discovery","tahkikat","soruşturma","examination","调查"],"category":"evidentiary","frequency":3100}
+{"term":"icra","synonyms":["execution","tatbik","enforcement","infaz","تنفيذ"],"category":"procedural","frequency":7700}
+{"term":"haciz","synonyms":["seizure","el koyma","müsadere","attachment","扣押"],"category":"procedural","frequency":5500}
+{"term":"ihtiyati tedbir","synonyms":["precautionary measure","önlem","koruma","احتياطي اجراء"],"category":"procedural","frequency":3600}
+{"term":"ipotek","synonyms":["mortgage","rehin","teminat","رهن","mortgage"],"category":"property","frequency":4200}
+{"term":"mülkiyet","synonyms":["ownership","sahiplik","temellük","所有权","ملكية"],"category":"property","frequency":6900}
+{"term":"zilyetlik","synonyms":["possession","tasarruf","حيازة","持有","işgal"],"category":"property","frequency":2800}
+{"term":"intifa","synonyms":["usufruct","استخدام","使用权","faydalanma","kullanma"],"category":"property","frequency":1700}
+{"term":"irtifak","synonyms":["easement","geçit hakkı","servitude","地役权","خدمة"],"category":"property","frequency":1400}
+{"term":"tapu","synonyms":["title deed","mülkiyet belgesi","契约","سند ملكية"],"category":"property","frequency":5200}
+{"term":"kira","synonyms":["rent","lease","اجارة","租赁","icara"],"category":"contractual","frequency":6700}
+{"term":"ariyet","synonyms":["loan","ödünç","借用","إعارة","istikraz"],"category":"contractual","frequency":900}
+{"term":"vekalet","synonyms":["agency","temsilcilik","vekaleten","وكالة","代理"],"category":"contractual","frequency":5800}
+{"term":"kefalet","synonyms":["guarantee","teminat","ضمان","担保","bail"],"category":"contractual","frequency":3900}
+{"term":"sigorta","synonyms":["insurance","teminat","保险","تأمين","emniyet"],"category":"contractual","frequency":7200}
+{"term":"miras","synonyms":["inheritance","tereke","遗产","ميراث","veraset"],"category":"succession","frequency":8400}
+{"term":"vasiyet","synonyms":["will","testament","遗嘱","وصية","vasiyetname"],"category":"succession","frequency":3300}
+{"term":"mirasçı","synonyms":["heir","varis","继承人","وارث","halef"],"category":"succession","frequency":5600}
+{"term":"tereке","synonyms":["estate","miras","遗产","تركة","metrukat"],"category":"succession","frequency":2900}
+{"term":"velayet","synonyms":["custody","velaya","监护","ولاية","koruma"],"category":"family","frequency":4700}
+{"term":"vesayet","synonyms":["guardianship","监护","وصاية","kayyumluk","保佐"],"category":"family","frequency":2100}
+{"term":"evlilik","synonyms":["marriage","izdivac","婚姻","زواج","nikah"],"category":"family","frequency":6100}
+{"term":"boşanma","synonyms":["divorce","طلاق","离婚","talak","ayrılma"],"category":"family","frequency":7800}
+{"term":"nafaka","synonyms":["alimony","赡养费","نفقة","bakmа","beslenme"],"category":"family","frequency":5300}
+{"term":"soybağı","synonyms":["filiation","nesep","血统","نسب","akrabalık"],"category":"family","frequency":1800}
+{"term":"evlatlık","synonyms":["adoption","تبني","收养","kabul etme","evlat edinme"],"category":"family","frequency":2400}
+{"term":"nüfus","synonyms":["civil registry","人口登记","سجل مدني","nüfus sicil","kayıt"],"category":"civil","frequency":4500}
+{"term":"ehliya","synonyms":["capacity","legal capacity","أهلية","行为能力","yeterlilik"],"category":"general","frequency":3700}
+{"term":"reşit","synonyms":["adult","major","成年","بالغ","yetişkin"],"category":"general","frequency":2200}
+{"term":"küçük","synonyms":["minor","未成年","قاصر","çocuk","ص赫ير"],"category":"general","frequency":4100}
+{"term":"şirket","synonyms":["company","corporation","شركة","公司","kurum"],"category":"commercial","frequency":11000}
+{"term":"ticaret","synonyms":["trade","commerce","تجارة","贸易","alışveriş"],"category":"commercial","frequency":9200}
+{"term":"patent","synonyms":["براءة اختراع","专利","ihtira","invention","buluş"],"category":"intellectual","frequency":2800}
+{"term":"marka","synonyms":["trademark","علامة تجارية","商标","nişan","işaret"],"category":"intellectual","frequency":4600}
+{"term":"telif","synonyms":["copyright","版权","حق التأليف","müelliflik","eser"],"category":"intellectual","frequency":3400}
+{"term":"ifade özgürlüğü","synonyms":["freedom of expression","حرية التعبير","言论自由","söz hürriyeti"],"category":"constitutional","frequency":5700}
+{"term":"basın özgürlüğü","synonyms":["freedom of press","حرية الصحافة","新闻自由","matbuat hürriyeti"],"category":"constitutional","frequency":3100}
+{"term":"toplantı hakkı","synonyms":["right to assembly","حق التجمع","集会权","toplanma hürriyeti"],"category":"constitutional","frequency":2400}
+{"term":"dernek kurma","synonyms":["freedom of association","حق التنظيم","结社自由","teşkilat hürriyeti"],"category":"constitutional","frequency":2800}
+{"term":"din özgürlüğü","synonyms":["freedom of religion","حرية الدين","宗教自由","inanç hürriyeti"],"category":"constitutional","frequency":3300}
+{"term":"eşitlik","synonyms":["equality","المساواة","平等","müsavat","dengelik"],"category":"constitutional","frequency":7600}
+{"term":"ayrımcılık","synonyms":["discrimination","تمييز","歧视","tefrik","farklı muamele"],"category":"constitutional","frequency":4900}
+{"term":"işkence","synonyms":["torture","تعذيب","酷刑","eziyet","azap"],"category":"constitutional","frequency":3700}
+{"term":"kölelik","synonyms":["slavery","عبودية","奴隶制","esaret","kulmurak"],"category":"constitutional","frequency":600}
+{"term":"kişi hürriyeti","synonyms":["personal liberty","الحرية الشخصية","人身自由","liberty"],"category":"constitutional","frequency":4200}
+{"term":"özel hayat","synonyms":["privacy","الخصوصية","隐私","mahremiyet","gizlilik"],"category":"constitutional","frequency":5800}
+{"term":"konut dokunulmazlığı","synonyms":["inviolability of domicile","حرمة المسكن","住宅不可侵","ev dokunulmazlığı"],"category":"constitutional","frequency":2100}
+{"term":"seyahat özgürlüğü","synonyms":["freedom of movement","حرية التنقل","迁徙自由","hareket hürriyeti"],"category":"constitutional","frequency":1800}
+{"term":"çalışma hakkı","synonyms":["right to work","حق العمل","工作权","iş hakkı"],"category":"labor","frequency":6400}
+{"term":"grev","synonyms":["strike","إضراب","罢工","iş bırakma","tatil"],"category":"labor","frequency":4300}
+{"term":"lokavt","synonyms":["lockout","إغلاق","停工","işyeri kapama","kapatma"],"category":"labor","frequency":1200}
+{"term":"sendika","synonyms":["union","نقابة","工会","birlik","dernek"],"category":"labor","frequency":5900}
+{"term":"toplu sözleşme","synonyms":["collective bargaining","عقد جماعي","集体合同","kolektif mukavele"],"category":"labor","frequency":3700}
+{"term":"iş akdi","synonyms":["employment contract","عقد عمل","劳动合同","çalışma sözleşmesi"],"category":"labor","frequency":8200}
+{"term":"fesih bildirimi","synonyms":["termination notice","إشعار إنهاء","解雇通知","işten çıkarma"],"category":"labor","frequency":4100}
+{"term":"kıdem tazminatı","synonyms":["severance pay","تعويض الأقدمية","遣散费","emeklilik ödemesi"],"category":"labor","frequency":5600}
+{"term":"ihbar tazminatı","synonyms":["notice compensation","تعويض الإشعار","通知补偿","bildirim tazminatı"],"category":"labor","frequency":3800}
+{"term":"çevre","synonyms":["environment","بيئة","环境","muhit","tabiat"],"category":"environmental","frequency":7100}
+{"term":"kirlilik","synonyms":["pollution","تلوث","污染","lüslaş","pislik"],"category":"environmental","frequency":3900}
+{"term":"atık","synonyms":["waste","نفايات","废物","çöp","süprüntü"],"category":"environmental","frequency":2700}
+{"term":"imar","synonyms":["zoning","تخطيط عمراني","规划","bayındırlık","şehircilik"],"category":"administrative","frequency":6800}
+{"term":"kamulaştırma","synonyms":["expropriation","نزع ملكية","征收","el koyma","istimlak"],"category":"administrative","frequency":5400}
+{"term":"ruhsat","synonyms":["license","ترخيص","许可","izin","mezuniyet"],"category":"administrative","frequency":7900}
+{"term":"belediye","synonyms":["municipality","بلدية","市政","şehir yönetimi","komün"],"category":"administrative","frequency":9500}
+{"term":"idari yargı","synonyms":["administrative law","قضاء إداري","行政法","idare mahkemesi"],"category":"administrative","frequency":4700}
+{"term":"vergi","synonyms":["tax","ضريبة","税","resim","harac"],"category":"tax","frequency":13000}
+{"term":"matrah","synonyms":["tax base","وعاء الضريبة","税基","esas","temeel"],"category":"tax","frequency":3100}
+{"term":"istisna","synonyms":["exemption","إعفاء","豁免","muafiyet","اعفاء"],"category":"tax","frequency":4600}
+{"term":"indirim","synonyms":["deduction","خصم","扣除","tenzilat","iskonto"],"category":"tax","frequency":5200}
+{"term":"cezai şart","synonyms":["penalty clause","شرط جزائي","违约金","zarar cezası"],"category":"contractual","frequency":2900}
+{"term":"akreditif","synonyms":["letter of credit","اعتماد مستندي","信用证","kredi mektubu"],"category":"commercial","frequency":1800}
+{"term":"senet","synonyms":["promissory note","سند","票据","kambiyo","borç kağıdı"],"category":"commercial","frequency":6300}
+{"term":"çek","synonyms":["check","شيك","支票","kambiyo senedi","ödeme belgesi"],"category":"commercial","frequency":4700}
+{"term":"poliçe","synonyms":["bill of exchange","كمبيالة","汇票","tahvil","senet"],"category":"commercial","frequency":2400}
+{"term":"konkordato","synonyms":["composition","توافق","和解","sulh","anlaşma"],"category":"bankruptcy","frequency":1100}
+{"term":"iflas","synonyms":["bankruptcy","إفلاس","破产","batma","sıfırlama"],"category":"bankruptcy","frequency":3600}
+{"term":"aciz","synonyms":["insolvency","عجز","无力偿付","acz","imkansızlık"],"category":"bankruptcy","frequency":1400}
+{"term":"tasfiye","synonyms":["liquidation","تصفية","清算","sonlandırma","kapama"],"category":"bankruptcy","frequency":2800}
+{"term":"konkordato","synonyms":["restructuring","إعادة هيكلة","重组","yeniden yapılandırma"],"category":"bankruptcy","frequency":1100}
+{"term":"tescil","synonyms":["registration","تسجيل","登记","kayıt","sicil"],"category":"administrative","frequency":6100}
+{"term":"sicil","synonyms":["registry","سجل","注册簿","kayıt","defter"],"category":"administrative","frequency":5700}
+{"term":"ticari sicil","synonyms":["commercial registry","سجل تجاري","商业登记","ticaret sicili"],"category":"commercial","frequency":3900}
+{"term":"tapu sicil","synonyms":["land registry","سجل عقاري","不动产登记","gayrimenkul sicili"],"category":"property","frequency":4600}
+{"term":"itfa","synonyms":["amortization","استهلاك","摊销","ödeme","tahsilat"],"category":"financial","frequency":1900}
+{"term":"faiz","synonyms":["interest","فائدة","利息","nema","kâr"],"category":"financial","frequency":8700}
+{"term":"anapara","synonyms":["principal","أصل","本金","sermaye","esas"],"category":"financial","frequency":3200}
+{"term":"teminat","synonyms":["collateral","ضمان","担保","garanti","kefil"],"category":"financial","frequency":7800}
+{"term":"rehin","synonyms":["pledge","رهن","质押","teminat","ipotek"],"category":"financial","frequency":4100}
+{"term":"takas","synonyms":["clearing","مقاصة","结算","ödeme","hesaplaşma"],"category":"financial","frequency":2600}
+{"term":"ciro","synonyms":["endorsement","تظهير","背书","havale","devre"],"category":"commercial","frequency":2800}
+{"term":"aval","synonyms":["guarantee","كفالة","保证","kefalet","garanti"],"category":"commercial","frequency":800}
+{"term":"menşe","synonyms":["origin","منشأ","原产地","kaynak","başlangıç"],"category":"commercial","frequency":3100}
+{"term":"tahkim","synonyms":["arbitration","تحكيم","仲裁","hakemlik","arabuluculuk"],"category":"procedural","frequency":4400}
+{"term":"arabulucu","synonyms":["mediator","وسيط","调解员","hakem","uzlaştırıcı"],"category":"procedural","frequency":3700}
+{"term":"uzlaşma","synonyms":["settlement","تسوية","和解","sulh","anlaşma"],"category":"procedural","frequency":5200}
+{"term":"barışma","synonyms":["reconciliation","مصالحة","和好","sulh","uyuşma"],"category":"procedural","frequency":1600}
+{"term":"feragat","synonyms":["waiver","تنازل","放弃","vazgeçme","terketme"],"category":"procedural","frequency":2900}
+{"term":"kabul","synonyms":["acceptance","قبول","接受","onay","tasdik"],"category":"general","frequency":8900}
+{"term":"ret","synonyms":["rejection","رفض","拒绝","reddetme","inkâr"],"category":"general","frequency":4700}
+{"term":"onay","synonyms":["approval","موافقة","批准","tasdik","kabul"],"category":"general","frequency":6800}
+{"term":"icazet","synonyms":["permission","إذن","许可","izin","ruhsat"],"category":"general","frequency":2100}
+{"term":"yasak","synonyms":["prohibition","حظر","禁止","men","tahrim"],"category":"general","frequency":5600}
+{"term":"yasaklama","synonyms":["ban","حظر","禁止","menetme","tahrim"],"category":"general","frequency":3400}
+{"term":"emretme","synonyms":["command","أمر","命令","emir","direktif"],"category":"general","frequency":2700}
+{"term":"bildiri","synonyms":["notice","إشعار","通知","tebligat","duyuru"],"category":"procedural","frequency":4200}
+{"term":"ihtar","synonyms":["warning","إنذار","警告","uyarı","ikaz"],"category":"procedural","frequency":3800}
+{"term":"ihtarname","synonyms":["notice","إنذار","通知","uyarı belgesi","ihbar"],"category":"procedural","frequency":2400}
+{"term":"protesto","synonyms":["protest","احتجاج","拒付","itiraz","ret"],"category":"commercial","frequency":2100}
+{"term":"ihtilaf","synonyms":["dispute","نزاع","争议","anlaşmazlık","uyuşmazlık"],"category":"general","frequency":5100}
+{"term":"yetki","synonyms":["jurisdiction","اختصاص","管辖权","salahiyet","mezuniyet"],"category":"procedural","frequency":9700}
+{"term":"görev","synonyms":["competence","اختصاص وظيفي","职权","vazife","iş"],"category":"procedural","frequency":8400}
+{"term":"süre","synonyms":["term","مدة","期限","müddet","vade"],"category":"procedural","frequency":10500}
+{"term":"vade","synonyms":["maturity","استحقاق","到期","süre","termin"],"category":"financial","frequency":4900}
+{"term":"tecil","synonyms":["postponement","تأجيل","延期","erteleme","tehir"],"category":"procedural","frequency":2800}
+{"term":"askıya alma","synonyms":["suspension","تعليق","暂停","durdurma","tevkif"],"category":"procedural","frequency":3100}
+{"term":"durma","synonyms":["stay","توقف","中止","tevakkuf","bekletme"],"category":"procedural","frequency":2400}
+{"term":"düşme","synonyms":["dismissal","سقوط","驳回","sakat olma","reddetme"],"category":"procedural","frequency":3700}
+{"term":"kaldırma","synonyms":["removal","إزالة","撤销","giderme","izale"],"category":"general","frequency":4600}
+{"term":"iptali","synonyms":["annulment","إبطال","撤销","bozma","fesih"],"category":"general","frequency":6300}
+{"term":"yürütme","synonyms":["execution","تنفيذ","执行","iş görmة","tatbik"],"category":"procedural","frequency":7200}
+{"term":"tedbir","synonyms":["measure","تدبير","措施","önlem","çare"],"category":"general","frequency":5900}
+{"term":"koruma","synonyms":["protection","حماية","保护","muhafaza","vikaye"],"category":"general","frequency":8100}
+{"term":"engelleme","synonyms":["prevention","منع","阻止","menetme","men"],"category":"general","frequency":3900}
+{"term":"zorlama","synonyms":["coercion","إكراه","强制","cebir","ıztırar"],"category":"general","frequency":2700}
+{"term":"rıza","synonyms":["consent","رضا","同意","muvafakat","izin"],"category":"general","frequency":6400}
+{"term":"irade","synonyms":["will","إرادة","意志","arzu","istek"],"category":"general","frequency":5700}
+{"term":"niyetname","synonyms":["declaration of intent","بيان النية","意向书","niyet beyanı"],"category":"general","frequency":1100}
+{"term":"hile","synonyms":["fraud","احتيال","欺诈","desise","aldatma"],"category":"general","frequency":4200}
+{"term":"ikrah","synonyms":["duress","إكراه","胁迫","zorlama","tazyik"],"category":"general","frequency":1800}
+{"term":"hata","synonyms":["mistake","خطأ","错误","yanlış","sehiv"],"category":"general","frequency":7600}
+{"term":"yanılma","synonyms":["error","خطأ","误解","yanlışlık","hatalı anlama"],"category":"general","frequency":2900}
+{"term":"ahlaka aykırı","synonyms":["immoral","منافٍ للآداب","违反道德","gayri ahlaki"],"category":"general","frequency":3300}
+{"term":"kamu düzeni","synonyms":["public order","النظام العام","公共秩序","asayiş","intizam"],"category":"general","frequency":5800}
+{"term":"emredici","synonyms":["mandatory","آمر","强制性","mecburi","zorunlu"],"category":"general","frequency":4100}
+{"term":"tamamlayıcı","synonyms":["supplementary","مكمل","补充性","takviye edici"],"category":"general","frequency":2400}
+{"term":"geçerlilik","synonyms":["validity","صحة","有效性","sahih olma","muteber"],"category":"general","frequency":6700}
+{"term":"hükümsüzlük","synonyms":["nullity","بطلان","无效","iptal","sakat"],"category":"general","frequency":4900}
+{"term":"butlan","synonyms":["absolute nullity","بطلان مطلق","绝对无效","mutlak hükümsüzlük"],"category":"general","frequency":2100}
+{"term":"iptal edilebilir","synonyms":["voidable","قابل للإبطال","可撤销","bozulabilir"],"category":"general","frequency":3600}
+{"term":"tahsis","synonyms":["allocation","تخصيص","分配","ayırma","özgüleme"],"category":"general","frequency":4400}
+{"term":"kullanma","synonyms":["use","استعمال","使用","istimal","faydalanma"],"category":"general","frequency":7800}
+{"term":"tasarruf","synonyms":["disposal","تصرف","处分","harcama","sarfetme"],"category":"general","frequency":5300}
+{"term":"devir","synonyms":["transfer","نقل","转让","nakil","temlik"],"category":"general","frequency":6100}
+{"term":"temlik","synonyms":["assignment","تمليك","让与","devir","nakil"],"category":"general","frequency":2800}
+{"term":"halef","synonyms":["successor","خلف","继承人","yerine geçen","varis"],"category":"general","frequency":2400}
+{"term":"selef","synonyms":["predecessor","سلف","前任","önce gelen","evvelki"],"category":"general","frequency":1600}
+{"term":"halefiye","synonyms":["subrogation","حلول","代位","yerine geçme"],"category":"general","frequency":1900}
+{"term":"rücû","synonyms":["recourse","رجوع","追偿","geri dönme","başvuru"],"category":"general","frequency":3700}
+{"term":"ihale","synonyms":["bidding","مناقصة","招标","artırma","açık eksiltme"],"category":"administrative","frequency":6900}
+{"term":"eksiltme","synonyms":["tender","مزايدة","投标","artırma","ihale"],"category":"administrative","frequency":3200}
+{"term":"artırma","synonyms":["auction","مزاد","拍卖","açık artırma","müzayede"],"category":"administrative","frequency":2700}
+{"term":"müzayede","synonyms":["public auction","مزاد علني","公开拍卖","açık artırma"],"category":"administrative","frequency":2100}
+{"term":"cayma","synonyms":["withdrawal","تراجع","撤回","vazgeçme","dönme"],"category":"contractual","frequency":4300}
+{"term":"dönme","synonyms":["rescission","فسخ","解除","cayma","bozma"],"category":"contractual","frequency":3800}
+{"term":"bozma","synonyms":["dissolution","نقض","撤销","iptal","fesih"],"category":"contractual","frequency":5600}
+{"term":"ayıplı mal","synonyms":["defective goods","بضاعة معيبة","有缺陷商品","kusurlu emtia"],"category":"contractual","frequency":2900}
+{"term":"gizli ayıp","synonyms":["latent defect","عيب خفي","隐蔽瑕疵","saklı kusur"],"category":"contractual","frequency":2400}
+{"term":"teslim","synonyms":["delivery","تسليم","交付","ifa","vermة"],"category":"contractual","frequency":7200}
+{"term":"ifa","synonyms":["performance","وفاء","履行","yerine getirme","teslim"],"category":"contractual","frequency":8400}
+{"term":"temerrüt","synonyms":["default","تخلف","违约","gecikme","عجز"],"category":"contractual","frequency":5100}
+{"term":"imkansızlık","synonyms":["impossibility","استحالة","不能","muhallik","mümkün olmama"],"category":"contractual","frequency":3300}
+{"term":"aşırı ifa güçlüğü","synonyms":["hardship","مشقة فادحة","情势变更","zorlaşma"],"category":"contractual","frequency":1800}
+{"term":"sözleşme değişikliği","synonyms":["contract modification","تعديل العقد","合同变更","mukavele tadili"],"category":"contractual","frequency":2600}
+{"term":"uyarlama","synonyms":["adaptation","تكييف","调整","تعديل","değiştirme"],"category":"contractual","frequency":2100}
+{"term":"bağlayıcılık","synonyms":["binding force","قوة ملزمة","约束力","ilzam","mecburiyet"],"category":"general","frequency":4700}
+{"term":"ilzam","synonyms":["obligation","إلزام","强制","zorunluluk","mecburiyet"],"category":"general","frequency":2900}
+{"term":"mecburiyet","synonyms":["compulsion","إلزام","强制","zorunluluk","ıztırar"],"category":"general","frequency":3600}
+{"term":"ihtiyarilik","synonyms":["optionality","اختيار","任意性","serbestiyet","muhayyerlik"],"category":"general","frequency":1400}
