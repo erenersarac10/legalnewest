@@ -197,6 +197,9 @@ class RoleService:
             f"type={role.role_type}, tenant={tenant_id})"
         )
 
+        # Prometheus metric: role creation
+        # rbac_role_created_total.labels(role_type=role_type, tenant_id=str(tenant_id)).inc()
+
         return role
 
     async def get_role(
@@ -393,6 +396,14 @@ class RoleService:
             f"Deleted role: {role.name} (id={role_id}, hard={hard_delete})"
         )
 
+        # Prometheus metric: role deletion
+        deletion_type = "hard" if hard_delete else "soft"
+        # rbac_role_deleted_total.labels(
+        #     role_type=str(role.role_type),
+        #     tenant_id=str(role.tenant_id),
+        #     deletion_type=deletion_type
+        # ).inc()
+
         return True
 
     # =========================================================================
@@ -468,6 +479,13 @@ class RoleService:
             f"(expires={expires_at})"
         )
 
+        # Prometheus metric: role assignment
+        # rbac_role_assignment_total.labels(
+        #     role_slug=role.slug,
+        #     role_type=str(role.role_type),
+        #     tenant_id=str(role.tenant_id)
+        # ).inc()
+
         return True
 
     async def revoke_role(
@@ -485,6 +503,9 @@ class RoleService:
         Returns:
             True if revoked
         """
+        # Get role for metrics (before deletion)
+        role = await self.get_role(role_id)
+
         # Delete assignment
         result = await self.db.execute(
             delete(user_roles).where(
@@ -508,6 +529,15 @@ class RoleService:
         await self.db.commit()
 
         self.logger.info(f"Revoked role {role_id} from user {user_id}")
+
+        # Prometheus metric: role revocation
+        if role:
+            # rbac_role_revocation_total.labels(
+            #     role_slug=role.slug,
+            #     role_type=str(role.role_type),
+            #     tenant_id=str(role.tenant_id)
+            # ).inc()
+            pass
 
         return True
 

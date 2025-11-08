@@ -26,6 +26,7 @@ Example:
 """
 
 import functools
+import json
 from typing import Callable, List, Optional
 from uuid import UUID
 
@@ -34,6 +35,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database.session import get_db
 from backend.core.exceptions import PermissionDeniedError, AuthenticationError
+from backend.core.logging import get_logger
 from backend.security.rbac.context import (
     get_current_user_id,
     get_current_tenant_id,
@@ -41,6 +43,59 @@ from backend.security.rbac.context import (
 from backend.security.rbac.permissions import PermissionService
 from backend.security.rbac.roles import RoleService
 from backend.security.rbac.policies import PolicyEngine, PolicyContext
+
+# =============================================================================
+# LOGGER
+# =============================================================================
+
+logger = get_logger(__name__)
+
+
+# =============================================================================
+# SECURITY DENY EVENT LOGGING (for alerting & attack detection)
+# =============================================================================
+
+def _log_security_deny(
+    event_type: str,
+    user_id: Optional[UUID],
+    tenant_id: Optional[UUID],
+    resource: str,
+    action: str,
+    reason: str
+) -> None:
+    """
+    Log security deny event in structured format.
+
+    Events are logged as "security.event.deny" for alerting systems.
+    Can be used to detect brute-force attacks, privilege escalation, etc.
+
+    Args:
+        event_type: Type of denial (permission_denied, policy_denied, role_denied)
+        user_id: User ID (if authenticated)
+        tenant_id: Tenant ID
+        resource: Resource being accessed
+        action: Action attempted
+        reason: Human-readable reason
+    """
+    logger.warning(
+        "security.event.deny",
+        extra={
+            "event_type": event_type,
+            "user_id": str(user_id) if user_id else None,
+            "tenant_id": str(tenant_id) if tenant_id else None,
+            "resource": resource,
+            "action": action,
+            "reason": reason,
+        }
+    )
+
+    # Prometheus metric
+    # security_event_deny_total.labels(
+    #     event_type=event_type,
+    #     resource=resource,
+    #     action=action,
+    #     tenant_id=str(tenant_id) if tenant_id else "unknown"
+    # ).inc()
 
 # =============================================================================
 # PERMISSION DECORATORS
@@ -98,6 +153,17 @@ def require_permission(resource: str, action: str):
             )
 
             if not has_perm:
+                # Log security deny event
+                tenant_id = get_current_tenant_id()
+                _log_security_deny(
+                    event_type="permission_denied",
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    resource=resource,
+                    action=action,
+                    reason=f"User lacks permission {resource}:{action}"
+                )
+
                 raise PermissionDeniedError(
                     f"Permission denied: {resource}:{action}"
                 )

@@ -146,6 +146,14 @@ class ObservabilityConfig(BaseModel):
     custom_metrics_enabled: bool = True
     business_metrics_enabled: bool = True  # Turkish Legal AI metrics
 
+    # RBAC Monitoring (production-critical)
+    rbac_policy_audit_enabled: bool = True  # Log all policy evaluations to JSONL
+    rbac_policy_audit_path: str = "/var/log/legalai/rbac_audit.jsonl"
+    rbac_permission_cache_enabled: bool = True  # Redis cache for permissions
+    rbac_permission_cache_ttl: int = 60  # Cache TTL in seconds (default: 60s)
+    rbac_security_deny_logging: bool = True  # Log all deny events
+    rbac_metrics_enabled: bool = True  # Prometheus RBAC metrics
+
 
 # Harvey/Legora %100: Multi-Environment Observability Configuration
 OBSERVABILITY_CONFIGS: Dict[str, ObservabilityConfig] = {
@@ -458,7 +466,7 @@ PROMETHEUS_METRICS: Dict[str, Dict] = {
     },
 
     # ==========================================================================
-    # RBAC METRICS
+    # RBAC METRICS (Role-Based Access Control)
     # ==========================================================================
 
     "rbac_authorization_total": {
@@ -471,6 +479,75 @@ PROMETHEUS_METRICS: Dict[str, Dict] = {
         "description": "RBAC authorization duration",
         "labels": ["resource"],
         "buckets": [0.001, 0.01, 0.05, 0.1, 0.5],
+    },
+
+    # Role Change Events (for audit compliance)
+    "rbac_role_assignment_total": {
+        "type": "counter",
+        "description": "Total role assignments (granted to users)",
+        "labels": ["role_slug", "role_type", "tenant_id"],
+    },
+    "rbac_role_revocation_total": {
+        "type": "counter",
+        "description": "Total role revocations (removed from users)",
+        "labels": ["role_slug", "role_type", "tenant_id"],
+    },
+    "rbac_role_created_total": {
+        "type": "counter",
+        "description": "Total roles created",
+        "labels": ["role_type", "tenant_id"],
+    },
+    "rbac_role_deleted_total": {
+        "type": "counter",
+        "description": "Total roles deleted",
+        "labels": ["role_type", "tenant_id", "deletion_type"],  # deletion_type: soft, hard
+    },
+
+    # Policy Evaluation Metrics
+    "rbac_policy_evaluation_total": {
+        "type": "counter",
+        "description": "Total policy evaluations",
+        "labels": ["decision", "resource_type", "action"],  # decision: allow, deny
+    },
+    "rbac_policy_evaluation_duration_seconds": {
+        "type": "histogram",
+        "description": "Policy evaluation duration (includes all checks)",
+        "labels": ["resource_type"],
+        "buckets": [0.001, 0.005, 0.01, 0.05, 0.1, 0.5],
+    },
+    "rbac_policy_custom_evaluation_total": {
+        "type": "counter",
+        "description": "Custom policy evaluations",
+        "labels": ["policy_name", "decision"],
+    },
+
+    # Permission Cache Metrics (Redis)
+    "rbac_permission_cache_hits_total": {
+        "type": "counter",
+        "description": "Permission cache hits (Redis)",
+        "labels": ["user_id_hash"],  # Hash for privacy
+    },
+    "rbac_permission_cache_misses_total": {
+        "type": "counter",
+        "description": "Permission cache misses (Redis)",
+        "labels": ["user_id_hash"],
+    },
+    "rbac_permission_cache_ttl_seconds": {
+        "type": "gauge",
+        "description": "Permission cache TTL setting (default: 60s)",
+        "labels": [],
+    },
+
+    # Security Deny Events (for alerting)
+    "security_event_deny_total": {
+        "type": "counter",
+        "description": "Security deny events (permission/policy denied)",
+        "labels": ["event_type", "resource", "action", "tenant_id"],  # event_type: permission_denied, policy_denied, ownership_denied
+    },
+    "security_event_deny_by_user_total": {
+        "type": "counter",
+        "description": "Security deny events grouped by user (detect attacks)",
+        "labels": ["user_id_hash", "event_type"],
     },
 
     # ==========================================================================

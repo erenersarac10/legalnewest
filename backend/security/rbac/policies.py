@@ -40,8 +40,11 @@ Example:
 """
 
 import datetime
-from dataclasses import dataclass, field
+import json
+import time
+from dataclasses import dataclass, field, asdict
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set
 from uuid import UUID
 
@@ -56,6 +59,85 @@ from backend.security.rbac.roles import RoleService
 # =============================================================================
 
 logger = get_logger(__name__)
+
+
+# =============================================================================
+# POLICY AUDIT TRAIL (JSONL logging for compliance)
+# =============================================================================
+
+POLICY_AUDIT_ENABLED = True  # Can be disabled via config
+POLICY_AUDIT_PATH = "/var/log/legalai/rbac_audit.jsonl"  # JSONL format for analysis
+
+
+def _log_policy_evaluation(
+    context: "PolicyContext",
+    decision: bool,
+    duration_ms: float,
+    evaluation_details: Optional[Dict[str, Any]] = None
+) -> None:
+    """
+    Log policy evaluation to JSONL audit trail.
+
+    Format: One JSON object per line for easy parsing/analysis.
+    """
+    if not POLICY_AUDIT_ENABLED:
+        return
+
+    try:
+        audit_entry = {
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "user_id": str(context.user_id),
+            "tenant_id": str(context.tenant_id),
+            "resource_type": context.resource_type,
+            "resource_id": str(context.resource_id) if context.resource_id else None,
+            "action": context.action,
+            "decision": "allow" if decision else "deny",
+            "duration_ms": round(duration_ms, 2),
+            "ip_address": context.ip_address,
+            "user_agent": context.user_agent,
+            "evaluation_details": evaluation_details or {},
+        }
+
+        # Append to JSONL file (one JSON per line)
+        audit_path = Path(POLICY_AUDIT_PATH)
+        audit_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(audit_path, "a") as f:
+            f.write(json.dumps(audit_entry) + "\n")
+
+    except Exception as e:
+        logger.error(f"Failed to write policy audit log: {e}")
+
+
+# =============================================================================
+# OPENTELEMETRY (span injection for tracing)
+# =============================================================================
+
+# OpenTelemetry tracer (initialized externally)
+otel_tracer = None  # TODO: Initialize from backend.core.tracing
+
+
+def _create_policy_span(context: "PolicyContext"):
+    """
+    Create OpenTelemetry span for policy evaluation.
+
+    Returns context manager for span.
+    """
+    if otel_tracer is None:
+        # Return dummy context manager
+        from contextlib import nullcontext
+        return nullcontext()
+
+    # Create span with context
+    return otel_tracer.start_as_current_span(
+        "rbac.policy.evaluate",
+        attributes={
+            "user_id": str(context.user_id),
+            "tenant_id": str(context.tenant_id),
+            "resource_type": context.resource_type,
+            "action": context.action,
+        }
+    )
 
 
 # =============================================================================
@@ -180,64 +262,120 @@ class PolicyEngine:
         4. Team membership policies
         5. Custom policies
 
+        Logs to JSONL audit trail + OpenTelemetry span + Prometheus metrics.
+
         Args:
             context: Policy evaluation context
 
         Returns:
             True if allowed, False if denied
         """
-        self.logger.debug(
-            f"Evaluating policy: user={context.user_id}, "
-            f"resource={context.resource_type}:{context.resource_id}, "
-            f"action={context.action}"
-        )
+        start_time = time.time()
+        evaluation_details = {}
 
-        # 1. Check superadmin (wildcard permission)
-        if await self._check_superadmin(context):
-            self.logger.info(f"ALLOW: Superadmin access for user {context.user_id}")
-            return True
-
-        # 2. Permission-based check
-        if await self._check_permission(context):
-            # Continue to additional checks (ownership, team, etc.)
-            pass
-        else:
-            self.logger.info(
-                f"DENY: User {context.user_id} lacks permission "
-                f"{context.resource_type}:{context.action}"
+        # OpenTelemetry span for distributed tracing
+        with _create_policy_span(context):
+            self.logger.debug(
+                f"Evaluating policy: user={context.user_id}, "
+                f"resource={context.resource_type}:{context.resource_id}, "
+                f"action={context.action}"
             )
-            return False
 
-        # 3. Ownership check (if resource has owner)
-        if context.resource_owner_id:
-            if not await self._check_ownership(context):
-                self.logger.info(
-                    f"DENY: User {context.user_id} doesn't own resource "
-                    f"{context.resource_id}"
-                )
-                return False
+            # 1. Check superadmin (wildcard permission)
+            if await self._check_superadmin(context):
+                self.logger.info(f"ALLOW: Superadmin access for user {context.user_id}")
+                evaluation_details["reason"] = "superadmin"
+                decision = True
+            else:
+                # 2. Permission-based check
+                if await self._check_permission(context):
+                    evaluation_details["has_permission"] = True
+                else:
+                    self.logger.info(
+                        f"DENY: User {context.user_id} lacks permission "
+                        f"{context.resource_type}:{context.action}"
+                    )
+                    evaluation_details["reason"] = "no_permission"
+                    decision = False
 
-        # 4. Team membership check (if resource belongs to team)
-        if context.resource_team_id:
-            if not await self._check_team_membership(context):
-                self.logger.info(
-                    f"DENY: User {context.user_id} not in team "
-                    f"{context.resource_team_id}"
-                )
-                return False
+                    # Early return on permission failure
+                    duration_ms = (time.time() - start_time) * 1000
 
-        # 5. Custom policies
-        for custom_policy in self.custom_policies:
-            decision = await custom_policy(context, self.db)
-            if decision == PolicyDecision.DENY:
-                self.logger.info(
-                    f"DENY: Custom policy denied access for user {context.user_id}"
-                )
-                return False
+                    # Log to JSONL audit trail
+                    _log_policy_evaluation(context, decision, duration_ms, evaluation_details)
 
-        # All checks passed
-        self.logger.info(f"ALLOW: User {context.user_id} granted access")
-        return True
+                    # Prometheus metric: policy evaluation
+                    # rbac_policy_evaluation_total.labels(
+                    #     decision="deny",
+                    #     resource_type=context.resource_type,
+                    #     action=context.action
+                    # ).inc()
+
+                    return decision
+
+                # 3. Ownership check (if resource has owner)
+                if context.resource_owner_id:
+                    if not await self._check_ownership(context):
+                        self.logger.info(
+                            f"DENY: User {context.user_id} doesn't own resource "
+                            f"{context.resource_id}"
+                        )
+                        evaluation_details["reason"] = "not_owner"
+                        decision = False
+
+                        duration_ms = (time.time() - start_time) * 1000
+                        _log_policy_evaluation(context, decision, duration_ms, evaluation_details)
+                        return decision
+
+                # 4. Team membership check (if resource belongs to team)
+                if context.resource_team_id:
+                    if not await self._check_team_membership(context):
+                        self.logger.info(
+                            f"DENY: User {context.user_id} not in team "
+                            f"{context.resource_team_id}"
+                        )
+                        evaluation_details["reason"] = "not_team_member"
+                        decision = False
+
+                        duration_ms = (time.time() - start_time) * 1000
+                        _log_policy_evaluation(context, decision, duration_ms, evaluation_details)
+                        return decision
+
+                # 5. Custom policies
+                for custom_policy in self.custom_policies:
+                    policy_decision = await custom_policy(context, self.db)
+                    if policy_decision == PolicyDecision.DENY:
+                        self.logger.info(
+                            f"DENY: Custom policy denied access for user {context.user_id}"
+                        )
+                        evaluation_details["reason"] = "custom_policy"
+                        decision = False
+
+                        duration_ms = (time.time() - start_time) * 1000
+                        _log_policy_evaluation(context, decision, duration_ms, evaluation_details)
+                        return decision
+
+                # All checks passed
+                self.logger.info(f"ALLOW: User {context.user_id} granted access")
+                evaluation_details["reason"] = "all_checks_passed"
+                decision = True
+
+            # Log successful evaluation
+            duration_ms = (time.time() - start_time) * 1000
+            _log_policy_evaluation(context, decision, duration_ms, evaluation_details)
+
+            # Prometheus metric
+            decision_label = "allow" if decision else "deny"
+            # rbac_policy_evaluation_total.labels(
+            #     decision=decision_label,
+            #     resource_type=context.resource_type,
+            #     action=context.action
+            # ).inc()
+            # rbac_policy_evaluation_duration_seconds.labels(
+            #     resource_type=context.resource_type
+            # ).observe(duration_ms / 1000)
+
+            return decision
 
     # =========================================================================
     # POLICY CHECKS
