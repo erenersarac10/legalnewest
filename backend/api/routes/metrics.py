@@ -1064,7 +1064,7 @@ def collect_rbac_metrics() -> str:
             {}
         ))
 
-        # Preload metrics (Harvey/Legora %100)
+        # Preload metrics (Harvey/Legora %100 - Adaptive Warm-up)
         preload_stats = cache_metrics.get("preload_stats", {})
 
         metrics.append(format_prometheus_metric(
@@ -1088,6 +1088,31 @@ def collect_rbac_metrics() -> str:
             preload_stats.get("total_preloads", 0),
             "counter",
             "Total number of cache preloads performed",
+            {}
+        ))
+
+        # NEW: Cache warming efficiency metrics (Harvey/Legora %100)
+        metrics.append(format_prometheus_metric(
+            "permission_cache_preload_success_rate",
+            preload_stats.get("last_preload_success_rate", 0.0),
+            "gauge",
+            "Cache preload success rate (warmed/(warmed+errors), SLO target: >0.95)",
+            {}
+        ))
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_preload_latency_p95_ms",
+            preload_stats.get("preload_latency_p95_ms", 0.0),
+            "gauge",
+            "P95 latency per entry during cache preload in milliseconds",
+            {}
+        ))
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_refill_duration_ms",
+            preload_stats.get("last_preload_duration_ms", 0.0),
+            "gauge",
+            "Total duration of last cache warming/refill operation in milliseconds",
             {}
         ))
 

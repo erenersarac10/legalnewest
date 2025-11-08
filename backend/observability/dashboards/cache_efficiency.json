@@ -1,0 +1,871 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "cache-efficiency-rbac",
+    "title": "Cache Efficiency - RBAC Permission Cache",
+    "tags": ["cache", "rbac", "permissions", "performance"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "changes(permission_cache_total_preloads[5m]) > 0",
+          "iconColor": "green",
+          "name": "Cache Warming Events",
+          "tagKeys": "cache_warming",
+          "titleFormat": "Cache Warming Completed"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "type": "row",
+        "title": "🎯 Cache Performance Overview - SLO Targets"
+      },
+      {
+        "id": 2,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Cache Hit Ratio",
+        "targets": [
+          {
+            "expr": "permission_cache_hit_ratio",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.8,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.9,
+                  "color": "green"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 2
+          }
+        },
+        "description": "SLO Target: >90% (>0.90)\nCurrent hit ratio for permission cache lookups."
+      },
+      {
+        "id": 3,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Cache Stale Ratio",
+        "targets": [
+          {
+            "expr": "permission_cache_stale_ratio",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 0.3,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.5,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 2
+          }
+        },
+        "description": "Target: <30% (<0.30)\nPercentage of cache entries with TTL < 25% remaining. High stale ratio indicates need for cache warming."
+      },
+      {
+        "id": 4,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Preload Success Rate",
+        "targets": [
+          {
+            "expr": "permission_cache_preload_success_rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.9,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.95,
+                  "color": "green"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 2
+          }
+        },
+        "description": "SLO Target: >95% (>0.95)\nSuccess rate of cache warming operations (warmed/(warmed+errors))."
+      },
+      {
+        "id": 5,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Cache Size",
+        "targets": [
+          {
+            "expr": "permission_cache_size",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 5000,
+                  "color": "yellow"
+                },
+                {
+                  "value": 10000,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 0
+          }
+        },
+        "description": "Total number of cached permission sets in Redis."
+      },
+      {
+        "id": 6,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "type": "row",
+        "title": "📊 Cache Operations & Latency"
+      },
+      {
+        "id": 7,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 12
+        },
+        "type": "timeseries",
+        "title": "Cache Hit Ratio Trend",
+        "targets": [
+          {
+            "expr": "permission_cache_hit_ratio",
+            "refId": "A",
+            "legendFormat": "Hit Ratio"
+          },
+          {
+            "expr": "0.90",
+            "refId": "B",
+            "legendFormat": "SLO Target (90%)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "never"
+            },
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.8,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.9,
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "SLO Target (90%)"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [10, 10],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 8,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 12
+        },
+        "type": "timeseries",
+        "title": "Cache Operations Rate",
+        "targets": [
+          {
+            "expr": "rate(permission_cache_hits_total[5m])",
+            "refId": "A",
+            "legendFormat": "Hits/sec"
+          },
+          {
+            "expr": "rate(permission_cache_misses_total[5m])",
+            "refId": "B",
+            "legendFormat": "Misses/sec"
+          },
+          {
+            "expr": "rate(permission_cache_sets_total[5m])",
+            "refId": "C",
+            "legendFormat": "Writes/sec"
+          },
+          {
+            "expr": "rate(permission_cache_invalidations_total[5m])",
+            "refId": "D",
+            "legendFormat": "Invalidations/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "showPoints": "never",
+              "axisPlacement": "auto"
+            },
+            "unit": "ops",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 9,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 20
+        },
+        "type": "timeseries",
+        "title": "Cache Latency by Status",
+        "targets": [
+          {
+            "expr": "permission_cache_latency_ms{cache_status=\"hit\"}",
+            "refId": "A",
+            "legendFormat": "Cache Hit (<1ms SLO)"
+          },
+          {
+            "expr": "permission_cache_latency_ms{cache_status=\"miss\"}",
+            "refId": "B",
+            "legendFormat": "Cache Miss (<5ms SLO)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "ms",
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 5,
+                  "color": "yellow"
+                },
+                {
+                  "value": 10,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 10,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 20
+        },
+        "type": "timeseries",
+        "title": "Cache Memory Usage",
+        "targets": [
+          {
+            "expr": "permission_cache_memory_bytes",
+            "refId": "A",
+            "legendFormat": "Estimated Memory"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 30,
+              "showPoints": "never",
+              "gradientMode": "opacity"
+            },
+            "unit": "bytes",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 11,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 28
+        },
+        "type": "row",
+        "title": "🔥 Cache Warming & Adaptive Preload"
+      },
+      {
+        "id": 12,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 31
+        },
+        "type": "stat",
+        "title": "Last Preload Count",
+        "targets": [
+          {
+            "expr": "permission_cache_preload_count",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        },
+        "description": "Number of entries warmed in last cache preload operation."
+      },
+      {
+        "id": 13,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 31
+        },
+        "type": "stat",
+        "title": "Preload Duration",
+        "targets": [
+          {
+            "expr": "permission_cache_refill_duration_ms",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 3000,
+                  "color": "yellow"
+                },
+                {
+                  "value": 5000,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Total duration of last cache warming operation in milliseconds."
+      },
+      {
+        "id": 14,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 31
+        },
+        "type": "stat",
+        "title": "Preload P95 Latency",
+        "targets": [
+          {
+            "expr": "permission_cache_preload_latency_p95_ms",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "decimals": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 10,
+                  "color": "yellow"
+                },
+                {
+                  "value": 20,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "95th percentile latency per entry during cache preload (DB query + Redis write)."
+      },
+      {
+        "id": 15,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 31
+        },
+        "type": "stat",
+        "title": "Total Preloads",
+        "targets": [
+          {
+            "expr": "permission_cache_total_preloads",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        },
+        "description": "Total number of cache warming operations performed since startup."
+      },
+      {
+        "id": 16,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 37
+        },
+        "type": "timeseries",
+        "title": "Cache Warming Success Rate",
+        "targets": [
+          {
+            "expr": "permission_cache_preload_success_rate",
+            "refId": "A",
+            "legendFormat": "Success Rate"
+          },
+          {
+            "expr": "0.95",
+            "refId": "B",
+            "legendFormat": "SLO Target (95%)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.9,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.95,
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "SLO Target (95%)"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [10, 10],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 17,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 37
+        },
+        "type": "timeseries",
+        "title": "Preload Efficiency Metrics",
+        "targets": [
+          {
+            "expr": "permission_cache_refill_duration_ms / 1000",
+            "refId": "A",
+            "legendFormat": "Duration (seconds)"
+          },
+          {
+            "expr": "permission_cache_preload_count",
+            "refId": "B",
+            "legendFormat": "Entries Loaded"
+          },
+          {
+            "expr": "permission_cache_preload_errors",
+            "refId": "C",
+            "legendFormat": "Errors"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "bars",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 1,
+              "fillOpacity": 80,
+              "showPoints": "never"
+            },
+            "unit": "short",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "description": "Harvey/Legora %100: Cache Efficiency Dashboard for RBAC Permission Cache\n\nMonitors:\n- Cache hit ratio & SLO compliance (>90%)\n- Cache stale ratio & warming efficiency\n- Adaptive warm-up performance metrics\n- Cache operations rate & latency\n- Memory usage & capacity planning\n\nSLO Targets:\n- Cache Hit Ratio: >90%\n- Cache Hit Latency: <1ms\n- Cache Miss Latency: <5ms\n- Preload Success Rate: >95%\n- Stale Ratio: <30%"
+  },
+  "overwrite": true,
+  "folderId": 0,
+  "folderUid": "",
+  "message": "Harvey/Legora %100: Cache Efficiency Dashboard with Adaptive Warm-up metrics"
+}
