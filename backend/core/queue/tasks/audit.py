@@ -38,10 +38,42 @@ from backend.services.advanced_audit_service import AdvancedAuditService
 from backend.services.audit_archiver import AuditArchiver
 
 # =============================================================================
-# LOGGER
+# LOGGER & METRICS
 # =============================================================================
 
 logger = get_task_logger(__name__)
+
+# Prometheus metrics (lazy import to avoid circular dependency)
+def _get_metrics():
+    """Get Prometheus metrics client (lazy)."""
+    try:
+        from prometheus_client import Counter
+
+        # Task failure metrics
+        audit_task_failure_total = Counter(
+            'audit_task_failure_total',
+            'Total audit task failures',
+            ['task_name', 'failure_reason', 'tenant_id']
+        )
+        audit_task_retry_total = Counter(
+            'audit_task_retry_total',
+            'Total audit task retries',
+            ['task_name', 'retry_count', 'tenant_id']
+        )
+        audit_task_success_total = Counter(
+            'audit_task_success_total',
+            'Total successful audit task completions',
+            ['task_name', 'tenant_id']
+        )
+
+        return {
+            'failure': audit_task_failure_total,
+            'retry': audit_task_retry_total,
+            'success': audit_task_success_total,
+        }
+    except Exception:
+        # Metrics not available (testing environment)
+        return None
 
 
 # =============================================================================
@@ -87,6 +119,10 @@ def archive_audit_logs(
         extra={"tenant_id": tenant_id, "dry_run": dry_run},
     )
 
+    metrics = _get_metrics()
+    task_name = "archive_logs"
+    tenant_label = tenant_id or "all_tenants"
+
     try:
         # Run async function in sync context
         import asyncio
@@ -103,6 +139,13 @@ def archive_audit_logs(
             extra=result,
         )
 
+        # Track success metric
+        if metrics:
+            metrics['success'].labels(
+                task_name=task_name,
+                tenant_id=tenant_label
+            ).inc()
+
         return result
 
     except Exception as exc:
@@ -110,6 +153,24 @@ def archive_audit_logs(
             f"Audit log archiving failed: {exc}",
             extra={"error": str(exc), "tenant_id": tenant_id},
         )
+
+        # Track failure metric
+        if metrics:
+            metrics['failure'].labels(
+                task_name=task_name,
+                failure_reason=type(exc).__name__,
+                tenant_id=tenant_label
+            ).inc()
+
+        # Track retry metric
+        retry_num = self.request.retries + 1
+        if metrics and retry_num <= self.max_retries:
+            metrics['retry'].labels(
+                task_name=task_name,
+                retry_count=str(retry_num),
+                tenant_id=tenant_label
+            ).inc()
+
         # Retry with exponential backoff
         raise self.retry(exc=exc)
 
@@ -203,6 +264,10 @@ def cleanup_expired_logs(
         extra={"tenant_id": tenant_id, "dry_run": dry_run},
     )
 
+    metrics = _get_metrics()
+    task_name = "cleanup_logs"
+    tenant_label = tenant_id or "all_tenants"
+
     try:
         import asyncio
 
@@ -224,6 +289,13 @@ def cleanup_expired_logs(
                 extra=result,
             )
 
+        # Track success metric
+        if metrics:
+            metrics['success'].labels(
+                task_name=task_name,
+                tenant_id=tenant_label
+            ).inc()
+
         return result
 
     except Exception as exc:
@@ -231,6 +303,23 @@ def cleanup_expired_logs(
             f"Log cleanup failed: {exc}",
             extra={"error": str(exc), "tenant_id": tenant_id},
         )
+
+        # Track failure & retry metrics
+        if metrics:
+            metrics['failure'].labels(
+                task_name=task_name,
+                failure_reason=type(exc).__name__,
+                tenant_id=tenant_label
+            ).inc()
+
+            retry_num = self.request.retries + 1
+            if retry_num <= self.max_retries:
+                metrics['retry'].labels(
+                    task_name=task_name,
+                    retry_count=str(retry_num),
+                    tenant_id=tenant_label
+                ).inc()
+
         raise self.retry(exc=exc)
 
 
@@ -328,6 +417,9 @@ def generate_compliance_report(
         },
     )
 
+    metrics = _get_metrics()
+    task_name = "generate_report"
+
     try:
         import asyncio
 
@@ -345,6 +437,13 @@ def generate_compliance_report(
             extra=result,
         )
 
+        # Track success metric
+        if metrics:
+            metrics['success'].labels(
+                task_name=task_name,
+                tenant_id=tenant_id
+            ).inc()
+
         return result
 
     except Exception as exc:
@@ -352,6 +451,23 @@ def generate_compliance_report(
             f"Report generation failed: {exc}",
             extra={"error": str(exc), "tenant_id": tenant_id},
         )
+
+        # Track failure & retry metrics
+        if metrics:
+            metrics['failure'].labels(
+                task_name=task_name,
+                failure_reason=type(exc).__name__,
+                tenant_id=tenant_id
+            ).inc()
+
+            retry_num = self.request.retries + 1
+            if retry_num <= self.max_retries:
+                metrics['retry'].labels(
+                    task_name=task_name,
+                    retry_count=str(retry_num),
+                    tenant_id=tenant_id
+                ).inc()
+
         raise self.retry(exc=exc)
 
 
@@ -453,6 +569,9 @@ def process_batch_logs(
         extra={"tenant_id": tenant_id, "count": len(log_data)},
     )
 
+    metrics = _get_metrics()
+    task_name = "process_batch"
+
     try:
         import asyncio
 
@@ -468,6 +587,13 @@ def process_batch_logs(
             extra=result,
         )
 
+        # Track success metric
+        if metrics:
+            metrics['success'].labels(
+                task_name=task_name,
+                tenant_id=tenant_id
+            ).inc()
+
         return result
 
     except Exception as exc:
@@ -475,6 +601,15 @@ def process_batch_logs(
             f"Batch processing failed: {exc}",
             extra={"error": str(exc), "tenant_id": tenant_id},
         )
+
+        # Track failure metric
+        if metrics:
+            metrics['failure'].labels(
+                task_name=task_name,
+                failure_reason=type(exc).__name__,
+                tenant_id=tenant_id
+            ).inc()
+
         raise
 
 
