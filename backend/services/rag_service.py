@@ -100,6 +100,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 from backend.services.embedding_service import EmbeddingService
 from backend.services.document_search_service import DocumentSearchService, SearchResult
 from backend.services.advanced_search_service import AdvancedSearchService
+from backend.services.vector_db_service import VectorDBService, get_vector_db_service
 from backend.core.logging import get_logger
 
 
@@ -558,6 +559,7 @@ class RAGService:
         self.embedding_service = EmbeddingService()
         self.search_service = DocumentSearchService()
         self.advanced_search = AdvancedSearchService()
+        self.vector_db_service = get_vector_db_service()
         self.query_processor = QueryProcessor()
         self.result_fusion = ResultFusion()
         self.reranker = Reranker(
@@ -565,7 +567,7 @@ class RAGService:
             authority_boost=self.config.authority_boost,
         )
 
-        logger.info("RAG service initialized")
+        logger.info("RAG service initialized with vector DB support")
 
     async def retrieve(
         self,
@@ -642,15 +644,57 @@ class RAGService:
         query: str,
         top_k: int,
     ) -> List[RetrievedDocument]:
-        """Vector similarity search."""
-        # Generate query embedding
-        result = await self.embedding_service.embed(query)
-        query_vector = result.vector
+        """
+        Vector similarity search.
 
-        # TODO: Search vector DB (Pinecone/Weaviate/Qdrant)
-        # For now, return empty list
-        logger.warning("Vector DB not yet implemented")
-        return []
+        Harvey/Legora %100: Semantic search via Weaviate.
+
+        Args:
+            query: Search query
+            top_k: Number of results
+
+        Returns:
+            List[RetrievedDocument]: Semantically similar documents
+        """
+        try:
+            # Connect to vector DB if not connected
+            if not self.vector_db_service.weaviate_client:
+                connected = await self.vector_db_service.connect()
+                if not connected:
+                    logger.warning("Vector DB not available, falling back to full-text search")
+                    return []
+
+            # Search vector DB (Weaviate handles embedding generation internally)
+            # Use hybrid_alpha=1.0 for pure vector search
+            results = await self.vector_db_service.search(
+                query=query,
+                tenant_id=None,  # TODO: Pass tenant_id from request context
+                limit=top_k,
+                hybrid_alpha=1.0,  # Pure vector search (0.0 = keyword only)
+            )
+
+            # Convert to RetrievedDocument format
+            documents = []
+            for idx, result in enumerate(results):
+                documents.append(RetrievedDocument(
+                    document_id=result["document_id"],
+                    title=result["title"],
+                    snippet=result["content"][:500],  # Truncate snippet
+                    score=result["score"],
+                    source=result["source"],
+                    document_type=result["document_type"],
+                    publication_date=result.get("publication_date", "unknown"),
+                    citation_count=0,  # TODO: Integrate with citation graph
+                    rank=idx + 1,
+                    retrieval_method="vector",
+                ))
+
+            logger.info(f"Vector search returned {len(documents)} documents")
+            return documents
+
+        except Exception as e:
+            logger.error(f"Vector retrieval failed: {e}")
+            return []
 
     async def _fulltext_retrieval(
         self,
