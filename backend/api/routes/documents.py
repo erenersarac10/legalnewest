@@ -284,8 +284,11 @@ async def list_documents(
 
 
 @router.get("/{document_id}", response_model=LegalDocument)
+@require_permission("documents:read")
 async def get_document(
-    document_id: str = Path(..., description="Document ID (e.g., 'rg:2024-07-24')")
+    document_id: str = Path(..., description="Document ID (e.g., 'rg:2024-07-24')"),
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Get specific document by ID.
@@ -346,10 +349,11 @@ async def get_document(
 
 
 @router.post("", response_model=LegalDocument, status_code=status.HTTP_201_CREATED)
+@require_permission("documents:create")
 async def create_document(
     request: DocumentCreateRequest,
-    # TODO: Add authentication dependency
-    # current_user: User = Depends(get_current_admin_user)
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Create a new document (admin only).
@@ -418,11 +422,12 @@ async def create_document(
 
 
 @router.put("/{document_id}", response_model=LegalDocument)
+@require_permission("documents:update")
 async def update_document(
     document_id: str = Path(..., description="Document ID"),
     request: DocumentUpdateRequest = ...,
-    # TODO: Add authentication dependency
-    # current_user: User = Depends(get_current_admin_user)
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Update an existing document (admin only).
@@ -483,10 +488,11 @@ async def update_document(
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+@require_permission("documents:delete")
 async def delete_document(
     document_id: str = Path(..., description="Document ID"),
-    # TODO: Add authentication dependency
-    # current_user: User = Depends(get_current_admin_user)
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Delete a document (admin only).
@@ -534,9 +540,12 @@ async def delete_document(
 
 
 @router.get("/{document_id}/citations", response_model=CitationResponse)
+@require_permission("documents:read")
 async def get_document_citations(
     document_id: str = Path(..., description="Document ID"),
     limit: int = Query(50, ge=1, le=200, description="Limit citations"),
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Get citations from a document.
@@ -595,9 +604,12 @@ async def get_document_citations(
 
 
 @router.get("/{document_id}/cited-by", response_model=CitationResponse)
+@require_permission("documents:read")
 async def get_citing_documents(
     document_id: str = Path(..., description="Document ID"),
     limit: int = Query(50, ge=1, le=200, description="Limit results"),
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Get documents that cite this document.
@@ -655,8 +667,11 @@ async def get_citing_documents(
 
 
 @router.get("/{document_id}/timeline", response_model=TimelineResponse)
+@require_permission("documents:read")
 async def get_document_timeline(
     document_id: str = Path(..., description="Document ID"),
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Get document version timeline.
@@ -721,9 +736,12 @@ async def get_document_timeline(
 
 
 @router.get("/{document_id}/similar", response_model=DocumentListResponse)
+@require_permission("documents:read")
 async def get_similar_documents(
     document_id: str = Path(..., description="Document ID"),
     limit: int = Query(10, ge=1, le=50, description="Limit results"),
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Get similar documents (semantic similarity).
