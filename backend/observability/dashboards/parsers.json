@@ -1,1 +1,617 @@
-# Parser hata oranları dashboard
+{
+  "dashboard": {
+    "id": null,
+    "uid": "parser-error-rates",
+    "title": "Parser Error Rates - Adapter Health Matrix",
+    "tags": ["parsers", "adapters", "errors", "reliability"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "adapter_circuit_state > 0",
+          "iconColor": "red",
+          "name": "Circuit Breaker Events",
+          "tagKeys": "circuit_breaker",
+          "titleFormat": "Circuit Open: {{adapter}}"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "type": "row",
+        "title": "🎯 Error Rate SLO Targets (<0.5%)"
+      },
+      {
+        "id": 2,
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 3
+        },
+        "type": "timeseries",
+        "title": "Error Rate by Adapter (SLO: <0.5%)",
+        "targets": [
+          {
+            "expr": "adapter_error_rate{adapter=\"resmi_gazete\"}",
+            "refId": "A",
+            "legendFormat": "Resmi Gazete"
+          },
+          {
+            "expr": "adapter_error_rate{adapter=\"mevzuat_gov\"}",
+            "refId": "B",
+            "legendFormat": "Mevzuat.gov"
+          },
+          {
+            "expr": "adapter_error_rate{adapter=\"yargitay\"}",
+            "refId": "C",
+            "legendFormat": "Yargıtay"
+          },
+          {
+            "expr": "adapter_error_rate{adapter=\"danistay\"}",
+            "refId": "D",
+            "legendFormat": "Danıştay"
+          },
+          {
+            "expr": "adapter_error_rate{adapter=\"aym\"}",
+            "refId": "E",
+            "legendFormat": "AYM"
+          },
+          {
+            "expr": "0.005",
+            "refId": "F",
+            "legendFormat": "SLO Target (0.5%)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "percentunit",
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 0.005,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.01,
+                  "color": "red"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "SLO Target (0.5%)"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [10, 10],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true,
+            "values": ["value", "min", "max"]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 11
+        },
+        "type": "row",
+        "title": "📊 Request Volume & Circuit Breaker Status"
+      },
+      {
+        "id": 4,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 14
+        },
+        "type": "timeseries",
+        "title": "Request Rate by Adapter",
+        "targets": [
+          {
+            "expr": "rate(adapter_request_total[5m])",
+            "refId": "A",
+            "legendFormat": "{{adapter}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "never",
+              "stacking": {
+                "mode": "normal",
+                "group": "A"
+              }
+            },
+            "unit": "reqps",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 14
+        },
+        "type": "timeseries",
+        "title": "Circuit Breaker Status",
+        "targets": [
+          {
+            "expr": "adapter_circuit_state",
+            "refId": "A",
+            "legendFormat": "{{adapter}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "stepAfter",
+              "lineWidth": 3,
+              "fillOpacity": 40,
+              "showPoints": "always",
+              "pointSize": 6
+            },
+            "unit": "none",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 0.5,
+                  "color": "yellow"
+                },
+                {
+                  "value": 1,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "CLOSED",
+                    "color": "green"
+                  },
+                  "0.5": {
+                    "text": "HALF-OPEN",
+                    "color": "yellow"
+                  },
+                  "1": {
+                    "text": "OPEN",
+                    "color": "red"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        },
+        "description": "0=Closed (healthy), 0.5=Half-open (testing), 1=Open (failing)"
+      },
+      {
+        "id": 6,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 22
+        },
+        "type": "row",
+        "title": "📈 Cache Performance by Adapter"
+      },
+      {
+        "id": 7,
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 25
+        },
+        "type": "timeseries",
+        "title": "Cache Hit Ratio by Adapter (SLO: >80%)",
+        "targets": [
+          {
+            "expr": "adapter_cache_hit_ratio",
+            "refId": "A",
+            "legendFormat": "{{adapter}}"
+          },
+          {
+            "expr": "0.80",
+            "refId": "B",
+            "legendFormat": "SLO Target (80%)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.6,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.8,
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "SLO Target (80%)"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [10, 10],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true,
+            "values": ["value", "min", "max"]
+          }
+        }
+      },
+      {
+        "id": 8,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 33
+        },
+        "type": "row",
+        "title": "🔍 Adapter Health Matrix"
+      },
+      {
+        "id": 9,
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 36
+        },
+        "type": "table",
+        "title": "Adapter Health Summary",
+        "targets": [
+          {
+            "expr": "adapter_error_rate",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "adapter_request_total",
+            "refId": "B",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "adapter_cache_hit_ratio",
+            "refId": "C",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "adapter_circuit_state",
+            "refId": "D",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "adapter_error_rate"
+              },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "green"
+                      },
+                      {
+                        "value": 0.005,
+                        "color": "yellow"
+                      },
+                      {
+                        "value": 0.01,
+                        "color": "red"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "unit",
+                  "value": "percentunit"
+                },
+                {
+                  "id": "decimals",
+                  "value": 3
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "adapter_cache_hit_ratio"
+              },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-background"
+                },
+                {
+                  "id": "thresholds",
+                  "value": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "red"
+                      },
+                      {
+                        "value": 0.6,
+                        "color": "yellow"
+                      },
+                      {
+                        "value": 0.8,
+                        "color": "green"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "unit",
+                  "value": "percentunit"
+                },
+                {
+                  "id": "decimals",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "adapter_circuit_state"
+              },
+              "properties": [
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-text"
+                },
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "type": "value",
+                      "options": {
+                        "0": {
+                          "text": "✓ CLOSED",
+                          "color": "green"
+                        },
+                        "0.5": {
+                          "text": "⚠ HALF-OPEN",
+                          "color": "yellow"
+                        },
+                        "1": {
+                          "text": "✗ OPEN",
+                          "color": "red"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "displayName": "adapter_error_rate",
+              "desc": true
+            }
+          ]
+        },
+        "transformations": [
+          {
+            "id": "merge",
+            "options": {}
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true
+              },
+              "indexByName": {
+                "adapter": 0,
+                "adapter_request_total": 1,
+                "adapter_error_rate": 2,
+                "adapter_cache_hit_ratio": 3,
+                "adapter_circuit_state": 4
+              },
+              "renameByName": {
+                "adapter": "Adapter",
+                "adapter_request_total": "Total Requests",
+                "adapter_error_rate": "Error Rate",
+                "adapter_cache_hit_ratio": "Cache Hit Ratio",
+                "adapter_circuit_state": "Circuit State"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "description": "Harvey/Legora %100: Parser Error Rates & Adapter Health Matrix\n\nMonitors:\n- Error rates by adapter (SLO: <0.5%)\n- Request volume & throughput\n- Circuit breaker status\n- Cache hit ratios (SLO: >80%)\n- Adapter health matrix\n\nSLO Targets:\n- Error Rate: <0.5% (<0.005)\n- Cache Hit Ratio: >80%\n- Circuit Breaker: Closed\n\nAlert Rules:\n- ALERT if error rate >1% for 5m\n- ALERT if circuit breaker opens\n- ALERT if cache hit ratio <60% for 10m"
+  },
+  "overwrite": true,
+  "folderId": 0,
+  "folderUid": "",
+  "message": "Harvey/Legora %100: Parser Error Rates Dashboard with adapter health matrix"
+}
