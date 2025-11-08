@@ -64,6 +64,13 @@ from backend.api.schemas.canonical import (
     DocumentStatus,
 )
 from backend.core.logging import get_logger
+from backend.core.auth import (
+    require_permission,
+    get_current_user,
+    get_current_tenant_id,
+    User,
+)
+from uuid import UUID
 
 
 logger = get_logger(__name__)
@@ -184,6 +191,7 @@ class TimelineResponse(BaseModel):
 
 
 @router.get("", response_model=DocumentListResponse)
+@require_permission("documents:read")
 async def list_documents(
     q: Optional[str] = Query(None, description="Search query"),
     source: Optional[LegalSourceType] = Query(None, description="Filter by source"),
@@ -199,6 +207,8 @@ async def list_documents(
     sort_order: str = Query("desc", description="Sort order"),
     offset: int = Query(0, ge=0, description="Offset"),
     limit: int = Query(20, ge=1, le=100, description="Limit"),
+    current_user: User = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     List and search documents with advanced filtering.

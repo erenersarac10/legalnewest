@@ -1,35 +1,55 @@
 """
 Prometheus Metrics Endpoint for Legal AI System.
 
-Harvey/Legora %100 parite: Production observability.
+Harvey/Legora %100: Production-grade observability with cardinality control.
 
 Exposes Prometheus-compatible metrics for:
 - Adapter health (requests, errors, latency, cache hit ratio)
-- Sync engine state (processed, failed, DLQ size)
+- Search performance (p95/p99 latency, error rate, cache)
+- Embedding service (cost tracking, latency, cache hit ratio)
+- RAG pipeline (token usage, confidence, latency)
+- Elasticsearch cluster (CPU, memory, disk, shards, status)
 - System health (uptime, memory, CPU)
 
 Metrics Format: Prometheus text-based exposition format
 https://prometheus.io/docs/instrumenting/exposition_formats/
 
+Cardinality Control:
+    - Label whitelisting prevents high-cardinality explosion
+    - Max labels per metric: adapter (5), mode (3), provider (2), phase (4)
+    - Total time series: ~500 (well within Prometheus limits)
+
+Histogram Buckets:
+    - Latency: [10ms, 50ms, 100ms, 200ms, 500ms, 1s, 2s, 5s]
+    - Cost: [0.001, 0.01, 0.1, 1, 10, 100]
+    - Result count: [1, 5, 10, 20, 50, 100, 200, 500]
+
+SLO Targets & Alert Rules:
+    Search:
+        - search_p95_ms{mode="full"} < 200ms
+        - search_p95_ms{mode="semantic"} < 500ms
+        - search_p95_ms{mode="hybrid"} < 600ms
+        - search_error_rate < 0.01 → ALERT if >0.02 for 5m
+
+    Embedding:
+        - embedding_hit_ratio > 0.95 → ALERT if <0.80 for 10m
+        - embedding_latency_ms{cached=true} < 100ms
+        - embedding_latency_ms{cached=false} < 500ms
+
+    RAG:
+        - rag_latency_ms{phase="retrieval"} < 500ms
+        - rag_latency_ms{phase="total"} < 2000ms → ALERT if >3000ms for 5m
+        - rag_confidence_score > 0.80 → ALERT if <0.70 for 15m
+
+    Elasticsearch:
+        - es_cpu_percent < 80 → ALERT if >85 for 5m
+        - es_memory_percent < 85 → ALERT if >90 for 5m
+        - es_cluster_status == 0 (green) → ALERT if ==2 (red) immediate
+
 Integration:
     Prometheus scrapes: GET /metrics every 15s
     Grafana dashboards: Visualize metrics
     AlertManager: Alert on SLO violations
-
-Example metrics output:
-    # HELP adapter_request_total Total requests per adapter
-    # TYPE adapter_request_total counter
-    adapter_request_total{adapter="resmi_gazete"} 1234
-    adapter_request_total{adapter="yargitay"} 5678
-
-    # HELP adapter_error_rate Error rate per adapter
-    # TYPE adapter_error_rate gauge
-    adapter_error_rate{adapter="resmi_gazete"} 0.0012
-
-SLO Targets:
-    - adapter_error_rate < 0.005 (0.5%)
-    - adapter_cache_hit_ratio > 0.80 (80%)
-    - adapter_latency_p95 < 3000ms
 """
 
 from fastapi import APIRouter, Response
@@ -43,6 +63,54 @@ from backend.core.logging import get_logger
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/metrics", tags=["observability"])
+
+
+# =============================================================================
+# CARDINALITY CONTROL
+# =============================================================================
+
+
+# Label whitelists to prevent cardinality explosion
+ALLOWED_ADAPTERS = {"resmi_gazete", "mevzuat_gov", "yargitay", "danistay", "aym"}
+ALLOWED_SEARCH_MODES = {"full", "semantic", "hybrid"}
+ALLOWED_EMBEDDING_PROVIDERS = {"openai", "azure_openai"}
+ALLOWED_RAG_PHASES = {"retrieval", "assembly", "generation", "total"}
+ALLOWED_RETRIEVAL_METHODS = {"vector", "fulltext", "hybrid"}
+
+# Histogram buckets (in milliseconds for latency)
+LATENCY_BUCKETS = [10, 50, 100, 200, 500, 1000, 2000, 5000]
+COST_BUCKETS = [0.001, 0.01, 0.1, 1, 10, 100]
+RESULT_COUNT_BUCKETS = [1, 5, 10, 20, 50, 100, 200, 500]
+
+
+def validate_label_value(label_name: str, value: str, whitelist: set) -> str:
+    """
+    Validate label value against whitelist.
+
+    Harvey/Legora %100: Cardinality control.
+
+    Args:
+        label_name: Label name (for logging)
+        value: Label value
+        whitelist: Allowed values
+
+    Returns:
+        str: Validated value or "other"
+
+    Example:
+        >>> validate_label_value("adapter", "yargitay", ALLOWED_ADAPTERS)
+        'yargitay'
+        >>> validate_label_value("adapter", "unknown_source", ALLOWED_ADAPTERS)
+        'other'
+    """
+    if value in whitelist:
+        return value
+
+    logger.warning(
+        f"Label value '{value}' for '{label_name}' not in whitelist, "
+        f"using 'other' to prevent cardinality explosion"
+    )
+    return "other"
 
 
 # =============================================================================
@@ -99,6 +167,245 @@ def format_prometheus_metric(
     return "\n".join(lines) + "\n"
 
 
+def format_prometheus_histogram(
+    name: str,
+    buckets: list,
+    values: list,
+    help_text: str = "",
+    labels: dict = None,
+) -> str:
+    """
+    Format histogram metric in Prometheus format.
+
+    Harvey/Legora %100: Histogram support for aggregatable percentiles.
+
+    Args:
+        name: Metric name
+        buckets: Bucket boundaries (e.g., [10, 50, 100, 200, 500])
+        values: Values to bucket (observed latencies)
+        help_text: Help text
+        labels: Labels
+
+    Returns:
+        str: Prometheus histogram format
+
+    Example:
+        >>> format_prometheus_histogram(
+        ...     "search_latency_ms",
+        ...     [10, 50, 100, 200, 500],
+        ...     [45, 120, 85, 190, 350],
+        ...     "Search latency distribution",
+        ...     {"mode": "hybrid"}
+        ... )
+    """
+    lines = []
+
+    # HELP and TYPE
+    if help_text:
+        lines.append(f"# HELP {name} {help_text}")
+    lines.append(f"# TYPE {name} histogram")
+
+    # Label formatting
+    label_str = ""
+    if labels:
+        label_str = "," + ",".join([f'{k}="{v}"' for k, v in labels.items()])
+
+    # Count observations in each bucket
+    total_count = len(values)
+    cumulative_count = 0
+
+    for bucket in buckets:
+        # Count values <= bucket
+        count = sum(1 for v in values if v <= bucket)
+        cumulative_count = count
+
+        lines.append(f"{name}_bucket{{le=\"{bucket}\"{label_str}}} {cumulative_count}")
+
+    # +Inf bucket (all values)
+    lines.append(f"{name}_bucket{{le=\"+Inf\"{label_str}}} {total_count}")
+
+    # Sum of all observations
+    total_sum = sum(values) if values else 0
+    lines.append(f"{name}_sum{{{label_str.lstrip(',')}}} {total_sum}")
+
+    # Count of observations
+    lines.append(f"{name}_count{{{label_str.lstrip(',')}}} {total_count}")
+
+    return "\n".join(lines) + "\n"
+
+
+def generate_slo_alert_rules() -> str:
+    """
+    Generate SLO alert rules in Prometheus YAML format.
+
+    Harvey/Legora %100: Production alert rules.
+
+    Returns:
+        str: Prometheus alert rules (YAML)
+
+    Example output:
+        ```yaml
+        groups:
+          - name: legal_ai_slo_alerts
+            rules:
+              - alert: SearchLatencyHigh
+                expr: search_p95_ms{mode="hybrid"} > 600
+                for: 5m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "Search latency exceeds SLO"
+        ```
+
+    Usage:
+        Save to prometheus/alerts/legal_ai.yml
+        Reload Prometheus: curl -X POST http://localhost:9090/-/reload
+    """
+    alert_rules = """# Prometheus Alert Rules for Turkish Legal AI
+# Harvey/Legora %100: SLO-driven alerting
+
+groups:
+  - name: legal_ai_slo_alerts
+    interval: 30s
+    rules:
+      # Search SLO Alerts
+      - alert: SearchLatencyHigh
+        expr: search_p95_ms{mode="hybrid"} > 600
+        for: 5m
+        labels:
+          severity: warning
+          component: search
+        annotations:
+          summary: "Search P95 latency exceeds SLO"
+          description: "Hybrid search P95 latency is {{ $value }}ms (SLO: <600ms)"
+
+      - alert: SearchLatencyCritical
+        expr: search_p99_ms > 2000
+        for: 2m
+        labels:
+          severity: critical
+          component: search
+        annotations:
+          summary: "Search P99 latency critically high"
+          description: "Search P99 latency is {{ $value }}ms (threshold: 2000ms)"
+
+      - alert: SearchErrorRateHigh
+        expr: search_error_rate > 0.02
+        for: 5m
+        labels:
+          severity: warning
+          component: search
+        annotations:
+          summary: "Search error rate exceeds SLO"
+          description: "Search error rate is {{ $value }} (SLO: <0.01)"
+
+      # Embedding SLO Alerts
+      - alert: EmbeddingCacheHitRatioLow
+        expr: embedding_hit_ratio < 0.80
+        for: 10m
+        labels:
+          severity: warning
+          component: embedding
+        annotations:
+          summary: "Embedding cache hit ratio below SLO"
+          description: "Cache hit ratio is {{ $value }} (SLO: >0.95)"
+
+      - alert: EmbeddingCacheHitRatioCritical
+        expr: embedding_hit_ratio < 0.50
+        for: 5m
+        labels:
+          severity: critical
+          component: embedding
+        annotations:
+          summary: "Embedding cache hit ratio critically low"
+          description: "Cache hit ratio is {{ $value }} (threshold: 0.50) - cost impact!"
+
+      # RAG SLO Alerts
+      - alert: RAGLatencyHigh
+        expr: rag_latency_ms{phase="total"} > 3000
+        for: 5m
+        labels:
+          severity: warning
+          component: rag
+        annotations:
+          summary: "RAG total latency exceeds SLO"
+          description: "RAG latency is {{ $value }}ms (SLO: <2000ms)"
+
+      - alert: RAGConfidenceLow
+        expr: rag_confidence_score < 0.70
+        for: 15m
+        labels:
+          severity: warning
+          component: rag
+        annotations:
+          summary: "RAG confidence score below threshold"
+          description: "RAG confidence is {{ $value }} (SLO: >0.80)"
+
+      # Elasticsearch SLO Alerts
+      - alert: ElasticsearchCPUHigh
+        expr: es_cpu_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: elasticsearch
+        annotations:
+          summary: "Elasticsearch CPU usage high"
+          description: "ES CPU is {{ $value }}% (SLO: <80%)"
+
+      - alert: ElasticsearchMemoryHigh
+        expr: es_memory_percent > 90
+        for: 5m
+        labels:
+          severity: critical
+          component: elasticsearch
+        annotations:
+          summary: "Elasticsearch memory usage critical"
+          description: "ES memory is {{ $value }}% (SLO: <85%)"
+
+      - alert: ElasticsearchClusterRed
+        expr: es_cluster_status == 2
+        for: 0m
+        labels:
+          severity: critical
+          component: elasticsearch
+        annotations:
+          summary: "Elasticsearch cluster status RED"
+          description: "Immediate attention required - data loss possible!"
+
+      - alert: ElasticsearchUnassignedShards
+        expr: es_unassigned_shards > 0
+        for: 10m
+        labels:
+          severity: warning
+          component: elasticsearch
+        annotations:
+          summary: "Elasticsearch has unassigned shards"
+          description: "{{ $value }} shards are unassigned"
+
+      # Adapter SLO Alerts
+      - alert: AdapterErrorRateHigh
+        expr: adapter_error_rate > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          component: adapter
+        annotations:
+          summary: "Adapter error rate exceeds SLO"
+          description: "Adapter {{ $labels.adapter }} error rate is {{ $value }} (SLO: <0.005)"
+
+      - alert: AdapterCircuitOpen
+        expr: adapter_circuit_state == 1
+        for: 2m
+        labels:
+          severity: critical
+          component: adapter
+        annotations:
+          summary: "Adapter circuit breaker OPEN"
+          description: "Adapter {{ $labels.adapter }} circuit is open - failing fast"
+"""
+    return alert_rules
+
+
 def collect_adapter_metrics() -> str:
     """
     Collect metrics from all adapters.
@@ -120,7 +427,9 @@ def collect_adapter_metrics() -> str:
     metrics = []
 
     for adapter_name, health in health_matrix.items():
-        labels = {"adapter": adapter_name}
+        # Cardinality control: validate adapter name
+        validated_adapter = validate_label_value("adapter", adapter_name, ALLOWED_ADAPTERS)
+        labels = {"adapter": validated_adapter}
 
         # Request metrics
         metrics.append(format_prometheus_metric(
@@ -261,9 +570,7 @@ def collect_search_metrics() -> str:
         # Get search service metrics (would need global instance or registry)
         # For now, return placeholder metrics with realistic values
 
-        modes = ["full", "semantic", "hybrid"]
-
-        for mode in modes:
+        for mode in ALLOWED_SEARCH_MODES:
             # P95 latency (simulated, would track in production)
             p95_values = {
                 "full": 150.0,
@@ -355,9 +662,7 @@ def collect_embedding_metrics() -> str:
         # Would need global service registry
         # For now, return metrics with realistic values
 
-        providers = ["openai", "azure_openai"]
-
-        for provider in providers:
+        for provider in ALLOWED_EMBEDDING_PROVIDERS:
             # Cache hit ratio (higher for openai due to more usage)
             hit_ratio = 0.93 if provider == "openai" else 0.78
             metrics.append(format_prometheus_metric(
@@ -450,25 +755,23 @@ def collect_rag_metrics() -> str:
         from backend.services.rag_service import RAGService
 
         # Context tokens by phase
-        phases = ["retrieval", "assembly", "generation"]
         token_counts = {
             "retrieval": 15000,  # Retrieved docs
             "assembly": 8000,    # Assembled context
             "generation": 1200,  # Generated answer
         }
 
-        for phase in phases:
+        for phase in ["retrieval", "assembly", "generation"]:
             metrics.append(format_prometheus_metric(
                 "rag_ctx_tokens",
-                token_counts[phase],
+                token_counts.get(phase, 0),
                 "gauge",
                 "RAG context tokens by phase",
                 {"phase": phase}
             ))
 
         # Retrieval count by method
-        methods = ["vector", "fulltext", "hybrid"]
-        for method in methods:
+        for method in ALLOWED_RETRIEVAL_METHODS:
             metrics.append(format_prometheus_metric(
                 "rag_retrieval_count",
                 5.2,  # Average docs retrieved
@@ -761,3 +1064,52 @@ async def get_adapter_health():
     """
     factory = get_factory()
     return factory.get_health_matrix()
+
+
+@router.get("/alert-rules")
+async def get_alert_rules():
+    """
+    Export Prometheus alert rules.
+
+    Harvey/Legora %100: SLO-driven alert configuration.
+
+    Returns:
+        Plain text Prometheus alert rules in YAML format
+
+    Usage:
+        ```bash
+        curl http://localhost:8000/metrics/alert-rules > prometheus/alerts/legal_ai.yml
+        ```
+
+    Then reload Prometheus:
+        ```bash
+        curl -X POST http://localhost:9090/-/reload
+        ```
+
+    Alert Rules:
+        - SearchLatencyHigh: P95 latency > 600ms for 5m
+        - SearchErrorRateHigh: Error rate > 2% for 5m
+        - EmbeddingCacheHitRatioLow: Cache hit < 80% for 10m
+        - RAGLatencyHigh: Total latency > 3s for 5m
+        - RAGConfidenceLow: Confidence < 0.70 for 15m
+        - ElasticsearchCPUHigh: CPU > 85% for 5m
+        - ElasticsearchMemoryHigh: Memory > 90% for 5m
+        - ElasticsearchClusterRed: Status RED (immediate)
+        - AdapterErrorRateHigh: Error rate > 1% for 5m
+        - AdapterCircuitOpen: Circuit breaker open for 2m
+
+    Response:
+        ```yaml
+        groups:
+          - name: legal_ai_slo_alerts
+            rules:
+              - alert: SearchLatencyHigh
+                expr: search_p95_ms{mode="hybrid"} > 600
+                for: 5m
+        ```
+    """
+    rules = generate_slo_alert_rules()
+    return Response(
+        content=rules,
+        media_type="text/plain; charset=utf-8"
+    )
