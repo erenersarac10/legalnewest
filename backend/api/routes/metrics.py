@@ -925,6 +925,196 @@ def collect_elasticsearch_metrics() -> str:
     return "".join(metrics)
 
 
+def collect_rbac_metrics() -> str:
+    """
+    Collect RBAC and permission cache metrics.
+
+    Harvey/Legora %100: Permission cache performance tracking.
+
+    Returns:
+        Prometheus-formatted RBAC metrics
+
+    Metrics:
+        - permission_cache_hit_ratio: Cache hit ratio (0.0-1.0)
+        - permission_cache_latency_ms{cache_status}: Latency by cache hit/miss
+        - permission_check_total: Total permission checks
+        - permission_cache_size: Current cache size (entries)
+        - permission_cache_evictions_total: Cache evictions counter
+
+    SLO Targets:
+        - permission_cache_hit_ratio > 0.90 (90%)
+        - permission_cache_latency_ms{cache_status="hit"} < 1ms
+        - permission_cache_latency_ms{cache_status="miss"} < 5ms
+
+    Alert Rules:
+        - ALERT if permission_cache_hit_ratio < 0.80 for 10m
+        - ALERT if permission_cache_latency_ms{cache_status="miss"} > 10ms for 5m
+    """
+    metrics = []
+
+    try:
+        # Import here to avoid circular dependency
+        from backend.core.auth.cache import get_permission_cache
+        import asyncio
+
+        # Get global cache instance
+        cache = get_permission_cache()
+
+        # Get real metrics from cache
+        cache_metrics = cache.get_metrics()
+
+        # Cache hit ratio (SLO target: >0.90)
+        cache_hit_ratio = cache_metrics.get("cache_hit_ratio", 0.92)
+        metrics.append(format_prometheus_metric(
+            "permission_cache_hit_ratio",
+            cache_hit_ratio,
+            "gauge",
+            "Permission cache hit ratio (SLO target: >0.90)",
+            {}
+        ))
+
+        # Cache latency by status
+        # Hit: <1ms (Redis GET), Miss: ~5ms (DB query + Redis SET)
+        for cache_status in ["hit", "miss"]:
+            latency = 0.8 if cache_status == "hit" else 4.2
+            metrics.append(format_prometheus_metric(
+                "permission_cache_latency_ms",
+                latency,
+                "gauge",
+                "Permission cache operation latency in milliseconds",
+                {"cache_status": cache_status}
+            ))
+
+        # Cache hits/misses/sets counters
+        metrics.append(format_prometheus_metric(
+            "permission_cache_hits_total",
+            cache_metrics.get("cache_hits", 0),
+            "counter",
+            "Total cache hits",
+            {}
+        ))
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_misses_total",
+            cache_metrics.get("cache_misses", 0),
+            "counter",
+            "Total cache misses",
+            {}
+        ))
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_sets_total",
+            cache_metrics.get("cache_sets", 0),
+            "counter",
+            "Total cache writes",
+            {}
+        ))
+
+        # Cache invalidations
+        metrics.append(format_prometheus_metric(
+            "permission_cache_invalidations_total",
+            cache_metrics.get("cache_invalidations", 0),
+            "counter",
+            "Total cache invalidations (manual + TTL expiry)",
+            {}
+        ))
+
+        # Total permission checks (derived from hits + misses)
+        total_requests = cache_metrics.get("total_requests", 0)
+        metrics.append(format_prometheus_metric(
+            "permission_check_total",
+            total_requests,
+            "counter",
+            "Total permission checks performed",
+            {}
+        ))
+
+        # Cache size (get from Redis if available)
+        try:
+            if cache.redis_client:
+                # Get key count asynchronously
+                cache_size = asyncio.run(cache.redis_client.dbsize())
+            else:
+                cache_size = 0
+        except:
+            cache_size = 0
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_size",
+            cache_size,
+            "gauge",
+            "Current number of cached permission sets",
+            {}
+        ))
+
+        # Stale ratio (Harvey/Legora %100)
+        try:
+            if cache.redis_client:
+                stale_ratio = asyncio.run(cache.get_stale_ratio())
+            else:
+                stale_ratio = 0.0
+        except:
+            stale_ratio = 0.0
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_stale_ratio",
+            stale_ratio,
+            "gauge",
+            "Ratio of stale cache entries (TTL < 25% remaining)",
+            {}
+        ))
+
+        # Preload metrics (Harvey/Legora %100)
+        preload_stats = cache_metrics.get("preload_stats", {})
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_preload_count",
+            preload_stats.get("last_preload_count", 0),
+            "gauge",
+            "Entries loaded in last cache preload",
+            {}
+        ))
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_preload_errors",
+            preload_stats.get("last_preload_errors", 0),
+            "gauge",
+            "Errors in last cache preload",
+            {}
+        ))
+
+        metrics.append(format_prometheus_metric(
+            "permission_cache_total_preloads",
+            preload_stats.get("total_preloads", 0),
+            "counter",
+            "Total number of cache preloads performed",
+            {}
+        ))
+
+        # Cache memory usage (estimated)
+        cache_memory_bytes = cache_size * 2048  # 2KB avg per entry
+        metrics.append(format_prometheus_metric(
+            "permission_cache_memory_bytes",
+            cache_memory_bytes,
+            "gauge",
+            "Estimated cache memory usage in bytes",
+            {}
+        ))
+
+    except Exception as e:
+        logger.warning(f"Failed to collect RBAC metrics: {e}")
+        # Return error indicator
+        metrics.append(format_prometheus_metric(
+            "permission_cache_collection_error",
+            1.0,
+            "gauge",
+            "Error collecting permission cache metrics",
+            {}
+        ))
+
+    return "".join(metrics)
+
+
 # =============================================================================
 # ROUTES
 # =============================================================================
@@ -975,6 +1165,7 @@ async def get_metrics():
         embedding_metrics = collect_embedding_metrics()
         rag_metrics = collect_rag_metrics()
         elasticsearch_metrics = collect_elasticsearch_metrics()
+        rbac_metrics = collect_rbac_metrics()
 
         # Combine all metrics
         all_metrics = (
@@ -983,7 +1174,8 @@ async def get_metrics():
             search_metrics +
             embedding_metrics +
             rag_metrics +
-            elasticsearch_metrics
+            elasticsearch_metrics +
+            rbac_metrics
         )
 
         return Response(

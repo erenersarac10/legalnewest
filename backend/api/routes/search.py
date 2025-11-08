@@ -45,11 +45,14 @@ Example:
 
 from typing import Optional, List, Dict, Any
 from datetime import date
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Depends, status
 from pydantic import BaseModel, Field, validator
 
 from backend.api.schemas.canonical import LegalSourceType, LegalDocumentType
+from backend.core.auth.middleware import require_permission
+from backend.core.auth.dependencies import get_current_user, get_current_tenant_id
 from backend.core.logging import get_logger
 
 
@@ -263,7 +266,12 @@ class SuggestionResponse(BaseModel):
 
 
 @router.post("", response_model=SearchResponse)
-async def search(request: SearchRequest):
+@require_permission("search:execute")
+async def search(
+    request: SearchRequest,
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
+):
     """
     Full-text search with BM25 ranking.
 
@@ -355,7 +363,12 @@ async def search(request: SearchRequest):
 
 
 @router.post("/semantic", response_model=SearchResponse)
-async def semantic_search(request: SemanticSearchRequest):
+@require_permission("search:execute")
+async def semantic_search(
+    request: SemanticSearchRequest,
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
+):
     """
     Semantic search with vector embeddings.
 
@@ -449,7 +462,12 @@ async def semantic_search(request: SemanticSearchRequest):
 
 
 @router.post("/hybrid", response_model=SearchResponse)
-async def hybrid_search(request: HybridSearchRequest):
+@require_permission("search:execute")
+async def hybrid_search(
+    request: HybridSearchRequest,
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
+):
     """
     Hybrid search combining full-text + semantic.
 
@@ -547,7 +565,12 @@ async def hybrid_search(request: HybridSearchRequest):
 
 
 @router.post("/advanced", response_model=SearchResponse)
-async def advanced_search(request: AdvancedSearchRequest):
+@require_permission("search:advanced")
+async def advanced_search(
+    request: AdvancedSearchRequest,
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
+):
     """
     Advanced search with boolean operators.
 
@@ -654,9 +677,12 @@ async def advanced_search(request: AdvancedSearchRequest):
 
 
 @router.get("/suggestions", response_model=SuggestionResponse)
+@require_permission("search:execute")
 async def get_suggestions(
     q: str = Query(..., min_length=1, max_length=100, description="Query prefix"),
     limit: int = Query(10, ge=1, le=20, description="Max suggestions"),
+    current_user: dict = Depends(get_current_user),
+    tenant_id: UUID = Depends(get_current_tenant_id),
 ):
     """
     Get autocomplete suggestions.
