@@ -158,6 +158,9 @@ class TokenBucket:
         self.refill_rate = refill_rate
         self.tokens = initial_tokens if initial_tokens is not None else self.capacity
         self.last_refill = time.time()
+        # Burst tracking for Prometheus metrics
+        self.burst_active_start = None  # When burst mode started
+        self.burst_total_seconds = 0.0  # Total time spent in burst mode
 
     def _refill(self) -> None:
         """Refill tokens based on elapsed time."""
@@ -173,6 +176,8 @@ class TokenBucket:
         """
         Attempt to consume tokens.
 
+        Tracks burst mode usage for Prometheus metrics.
+
         Args:
             tokens: Number of tokens to consume
 
@@ -182,10 +187,45 @@ class TokenBucket:
         self._refill()
 
         if self.tokens >= tokens:
+            # Track burst mode (when using tokens beyond base capacity)
+            self._track_burst_mode()
+
             self.tokens -= tokens
             return True
 
         return False
+
+    def _track_burst_mode(self) -> None:
+        """Track time spent in burst mode (tokens < base_capacity)."""
+        now = time.time()
+
+        if self.tokens < self.base_capacity:
+            # Entering or continuing burst mode
+            if self.burst_active_start is None:
+                self.burst_active_start = now
+        else:
+            # Not in burst mode
+            if self.burst_active_start is not None:
+                # Just exited burst mode, accumulate time
+                self.burst_total_seconds += now - self.burst_active_start
+                self.burst_active_start = None
+
+    def get_burst_active_seconds(self) -> float:
+        """
+        Get total seconds spent in burst mode.
+
+        Returns:
+            float: Total burst active seconds
+
+        Example:
+            >>> bucket.get_burst_active_seconds()
+            42.5  # 42.5 seconds in burst mode
+        """
+        total = self.burst_total_seconds
+        # Add current burst session if active
+        if self.burst_active_start is not None:
+            total += time.time() - self.burst_active_start
+        return total
 
     def peek(self) -> float:
         """Get current token count without consuming."""

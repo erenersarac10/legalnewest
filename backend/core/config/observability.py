@@ -115,6 +115,8 @@ class ObservabilityConfig(BaseModel):
     tracing_sample_rate: float = 0.1  # 10% sampling (production)
     tracing_service_name: str = "legalai-backend"
     tracing_tenant_id_enabled: bool = True  # Add tenant_id to all spans (multi-tenant tracing)
+    tracing_tenant_in_traceparent: bool = True  # Add tenant to tracestate header (W3C Trace Context)
+    tracing_propagation_format: str = "w3c"  # w3c, b3, jaeger (OpenTelemetry Collector filtering)
 
     # Logging
     logging_enabled: bool = True
@@ -356,6 +358,26 @@ PROMETHEUS_METRICS: Dict[str, Dict] = {
     },
 
     # ==========================================================================
+    # RATE LIMITING METRICS
+    # ==========================================================================
+
+    "rate_limit_exceeded_total": {
+        "type": "counter",
+        "description": "Total rate limit exceeded events",
+        "labels": ["tier", "endpoint"],
+    },
+    "burst_active_seconds_total": {
+        "type": "counter",
+        "description": "Total seconds burst capacity was active (behavior analysis)",
+        "labels": ["tier", "endpoint"],
+    },
+    "rate_limit_tokens_consumed_total": {
+        "type": "counter",
+        "description": "Total tokens consumed across all rate limiters",
+        "labels": ["tier"],
+    },
+
+    # ==========================================================================
     # DATABASE METRICS
     # ==========================================================================
 
@@ -527,6 +549,67 @@ PROMETHEUS_METRICS: Dict[str, Dict] = {
         "labels": ["feature_name"],
         "buckets": [0.0001, 0.001, 0.01, 0.05, 0.1],
     },
+
+    # ==========================================================================
+    # INFRASTRUCTURE / REGIONAL METRICS
+    # ==========================================================================
+
+    "route53_failover_state": {
+        "type": "gauge",
+        "description": "Route 53 DNS failover state (0=inactive, 1=active) for Grafana monitoring",
+        "labels": ["region", "failover_type"],  # failover_type: PRIMARY, SECONDARY
+    },
+    "region_health_check_status": {
+        "type": "gauge",
+        "description": "Regional health check status (0=unhealthy, 1=healthy)",
+        "labels": ["region", "check_type"],
+    },
+    "region_failover_events_total": {
+        "type": "counter",
+        "description": "Total regional failover events triggered",
+        "labels": ["from_region", "to_region", "reason"],
+    },
+
+    # ==========================================================================
+    # LEGAL SOURCE SYNC METRICS (Daily Update Scheduler)
+    # ==========================================================================
+
+    "legal_source_sync_duration_seconds": {
+        "type": "histogram",
+        "description": "Legal source dataset sync duration (Yargıtay, AYM, Danıştay)",
+        "labels": ["source"],  # source: yargitay, aym, danistay
+        "buckets": [10.0, 30.0, 60.0, 300.0, 600.0, 1800.0],  # 10s to 30min
+    },
+    "legal_source_docs_updated_total": {
+        "type": "counter",
+        "description": "Total legal documents updated from daily sync",
+        "labels": ["source", "status"],  # status: success, failed, skipped
+    },
+    "legal_source_last_sync_timestamp": {
+        "type": "gauge",
+        "description": "Unix timestamp of last successful sync",
+        "labels": ["source"],
+    },
+
+    # ==========================================================================
+    # COST FORECAST METRICS (Budget Management)
+    # ==========================================================================
+
+    "predicted_cost_next_30d": {
+        "type": "gauge",
+        "description": "Predicted LLM cost for next 30 days (USD) - budget alarm integration",
+        "labels": ["model", "forecast_method"],  # forecast_method: linear, exponential
+    },
+    "cost_budget_utilization": {
+        "type": "gauge",
+        "description": "Current cost vs budget utilization ratio (0-1)",
+        "labels": ["budget_period"],  # budget_period: daily, weekly, monthly
+    },
+    "cost_anomaly_detected": {
+        "type": "counter",
+        "description": "Cost anomaly detection events (spike > 2x normal)",
+        "labels": ["model", "anomaly_type"],
+    },
 }
 
 
@@ -585,6 +668,54 @@ ALERT_THRESHOLDS: Dict[str, Dict] = {
         "threshold": 0.95,  # 95%
         "severity": "critical",
         "description": "Legal source uptime < 95%",
+    },
+
+    # Dead Letter Queue (DLQ) alerts - auto-purge triggers
+    "dlq_count_high": {
+        "metric": "celery_dead_letter_queue_total",
+        "threshold": 100,  # 100 tasks in DLQ
+        "severity": "warning",
+        "description": "DLQ count > 100 (consider manual review)",
+        "action": "review_failed_tasks",
+    },
+    "dlq_count_critical": {
+        "metric": "celery_dead_letter_queue_total",
+        "threshold": 500,  # 500 tasks in DLQ
+        "severity": "critical",
+        "description": "DLQ count > 500 (auto-purge trigger)",
+        "action": "auto_purge_dlq",  # Trigger celery queue purge
+    },
+    "dlq_growth_rate_high": {
+        "metric": "celery_dead_letter_queue_total",
+        "threshold": 50,  # 50 tasks/min growth
+        "severity": "critical",
+        "description": "DLQ growing > 50 tasks/min (systemic failure)",
+        "action": "alert_oncall",
+    },
+
+    # Cost budget alerts (budget management)
+    "cost_budget_exceeded": {
+        "metric": "cost_budget_utilization",
+        "threshold": 0.90,  # 90% of budget
+        "severity": "warning",
+        "description": "Cost budget utilization > 90%",
+        "action": "notify_finance_team",
+    },
+    "cost_forecast_over_budget": {
+        "metric": "predicted_cost_next_30d",
+        "threshold": 10000.0,  # $10,000 monthly budget
+        "severity": "warning",
+        "description": "Predicted 30-day cost > $10k",
+        "action": "budget_review",
+    },
+
+    # Regional failover alerts
+    "region_health_check_failed": {
+        "metric": "region_health_check_status",
+        "threshold": 0.5,  # 50% health checks failing
+        "severity": "critical",
+        "description": "Regional health check failure > 50%",
+        "action": "trigger_dns_failover",
     },
 }
 
