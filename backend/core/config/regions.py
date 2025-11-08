@@ -135,6 +135,12 @@ class RegionConfig(BaseModel):
     failover_rto_seconds: int = 900  # 15 minutes (Recovery Time Objective)
     failover_rpo_seconds: int = 3600  # 1 hour (Recovery Point Objective)
 
+    # Route 53 Health Check (DNS-based failover)
+    route53_health_check_id: Optional[str] = None  # Health check ID
+    route53_health_check_interval: int = 30  # Check interval (seconds)
+    route53_health_check_threshold: int = 3  # Failures before failover
+    route53_dns_failover_type: Optional[Literal["PRIMARY", "SECONDARY"]] = None
+
     # Performance
     latency_slo_ms: int = 100  # Latency SLO (ms)
     availability_slo: float = 0.999  # 99.9% uptime
@@ -184,6 +190,11 @@ REGION_CONFIGS: Dict[str, RegionConfig] = {
         failover_automatic=True,
         failover_rto_seconds=900,  # 15 minutes
         failover_rpo_seconds=60,  # 1 minute (aggressive for legal data)
+        # Route 53 DNS-based health check & failover
+        route53_health_check_id="hc-istanbul-api-12345",
+        route53_health_check_interval=30,  # 30 seconds
+        route53_health_check_threshold=3,  # 3 consecutive failures
+        route53_dns_failover_type="PRIMARY",  # Primary region for DNS
         # Performance
         latency_slo_ms=50,  # 50ms SLO (same country)
         availability_slo=0.9999,  # 99.99% uptime

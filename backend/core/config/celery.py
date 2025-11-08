@@ -325,6 +325,39 @@ BEAT_SCHEDULE: Dict = {
         "options": {"queue": "documents", "priority": TaskPriority.MEDIUM},
     },
 
+    # Auto-update Yargıtay dataset (every day at 4 AM)
+    "update-yargitay-dataset": {
+        "task": "backend.tasks.legal_sources.update_yargitay_decisions",
+        "schedule": {
+            "hour": 4,
+            "minute": 0,
+        },
+        "options": {"queue": "documents", "priority": TaskPriority.HIGH},
+        "description": "Fetch latest Yargıtay decisions from karararama.yargitay.gov.tr",
+    },
+
+    # Auto-update AYM dataset (every day at 4:30 AM)
+    "update-aym-dataset": {
+        "task": "backend.tasks.legal_sources.update_aym_decisions",
+        "schedule": {
+            "hour": 4,
+            "minute": 30,
+        },
+        "options": {"queue": "documents", "priority": TaskPriority.HIGH},
+        "description": "Fetch latest AYM decisions from kararlarbilgibankasi.anayasa.gov.tr",
+    },
+
+    # Auto-update Danıştay dataset (every day at 5 AM)
+    "update-danistay-dataset": {
+        "task": "backend.tasks.legal_sources.update_danistay_decisions",
+        "schedule": {
+            "hour": 5,
+            "minute": 0,
+        },
+        "options": {"queue": "documents", "priority": TaskPriority.HIGH},
+        "description": "Fetch latest Danıştay decisions from karararama.danistay.gov.tr",
+    },
+
     # Generate analytics (every day at 1 AM)
     "generate-analytics": {
         "task": "backend.tasks.background.generate_analytics",

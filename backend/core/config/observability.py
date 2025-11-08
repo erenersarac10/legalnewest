@@ -114,6 +114,7 @@ class ObservabilityConfig(BaseModel):
     tracing_endpoint: str = "http://localhost:14268/api/traces"
     tracing_sample_rate: float = 0.1  # 10% sampling (production)
     tracing_service_name: str = "legalai-backend"
+    tracing_tenant_id_enabled: bool = True  # Add tenant_id to all spans (multi-tenant tracing)
 
     # Logging
     logging_enabled: bool = True
@@ -309,6 +310,27 @@ PROMETHEUS_METRICS: Dict[str, Dict] = {
     },
 
     # ==========================================================================
+    # LLM COST METRICS (for Grafana LLM Dashboard)
+    # ==========================================================================
+
+    "llm_cost_dollars_total": {
+        "type": "counter",
+        "description": "Total LLM cost in USD",
+        "labels": ["model", "provider"],
+    },
+    "llm_cost_per_request_dollars": {
+        "type": "histogram",
+        "description": "LLM cost per request in USD",
+        "labels": ["model"],
+        "buckets": [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0],
+    },
+    "llm_token_budget_remaining": {
+        "type": "gauge",
+        "description": "Remaining token budget (tokens)",
+        "labels": ["environment"],  # dev, staging, production
+    },
+
+    # ==========================================================================
     # CACHE METRICS
     # ==========================================================================
 
@@ -430,6 +452,37 @@ PROMETHEUS_METRICS: Dict[str, Dict] = {
     },
 
     # ==========================================================================
+    # CELERY / TASK QUEUE METRICS
+    # ==========================================================================
+
+    "celery_tasks_total": {
+        "type": "counter",
+        "description": "Total Celery tasks executed",
+        "labels": ["queue", "task_name", "status"],  # status: success, failure, retry
+    },
+    "celery_task_duration_seconds": {
+        "type": "histogram",
+        "description": "Celery task execution duration",
+        "labels": ["queue", "task_name"],
+        "buckets": [0.1, 1.0, 5.0, 10.0, 30.0, 60.0, 300.0],
+    },
+    "celery_queue_length": {
+        "type": "gauge",
+        "description": "Current Celery queue length (pending tasks)",
+        "labels": ["queue"],
+    },
+    "celery_dead_letter_queue_total": {
+        "type": "counter",
+        "description": "Tasks sent to dead letter queue (DLQ) - critical for retry anomaly detection",
+        "labels": ["queue", "task_name", "failure_reason"],
+    },
+    "celery_worker_active_tasks": {
+        "type": "gauge",
+        "description": "Active tasks being processed by workers",
+        "labels": ["worker", "queue"],
+    },
+
+    # ==========================================================================
     # BUSINESS METRICS (Turkish Legal AI)
     # ==========================================================================
 
@@ -452,6 +505,27 @@ PROMETHEUS_METRICS: Dict[str, Dict] = {
         "type": "gauge",
         "description": "Legal queries per minute (QPM)",
         "labels": [],
+    },
+
+    # ==========================================================================
+    # FEATURE FLAG / CANARY ROLLOUT METRICS
+    # ==========================================================================
+
+    "feature_rollout_progress": {
+        "type": "gauge",
+        "description": "Feature flag rollout percentage (canary deployment progress)",
+        "labels": ["feature_name", "environment"],
+    },
+    "feature_flag_evaluations_total": {
+        "type": "counter",
+        "description": "Total feature flag evaluations",
+        "labels": ["feature_name", "result"],  # result: enabled, disabled
+    },
+    "feature_flag_evaluation_duration_seconds": {
+        "type": "histogram",
+        "description": "Feature flag evaluation duration",
+        "labels": ["feature_name"],
+        "buckets": [0.0001, 0.001, 0.01, 0.05, 0.1],
     },
 }
 

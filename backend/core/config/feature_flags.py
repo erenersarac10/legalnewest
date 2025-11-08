@@ -365,6 +365,39 @@ def get_all_flags(
     }
 
 
+def get_feature_rollout_metrics() -> Dict[str, float]:
+    """
+    Get feature rollout metrics for Prometheus export.
+
+    Returns metrics for canary deployment progress tracking.
+
+    Returns:
+        dict: {flag_name: rollout_percentage}
+
+    Example:
+        >>> metrics = get_feature_rollout_metrics()
+        >>> # {"rag_v2": 0.10, "hybrid_search": 1.0, ...}
+
+    Usage with Prometheus:
+        >>> from prometheus_client import Gauge
+        >>> rollout_gauge = Gauge('feature_rollout_progress', '...', ['feature_name'])
+        >>> for flag_name, percentage in get_feature_rollout_metrics().items():
+        ...     rollout_gauge.labels(feature_name=flag_name).set(percentage)
+    """
+    metrics = {}
+    for name, flag in FEATURE_FLAGS.items():
+        if flag.type == FeatureFlagType.PERCENTAGE:
+            # Percentage rollout (0.0 - 1.0)
+            metrics[name] = flag.rollout_percentage
+        elif flag.enabled:
+            # Fully enabled
+            metrics[name] = 1.0
+        else:
+            # Fully disabled
+            metrics[name] = 0.0
+    return metrics
+
+
 __all__ = [
     "FeatureFlagType",
     "FeatureFlag",
@@ -372,4 +405,5 @@ __all__ = [
     "is_feature_enabled",
     "get_feature_variant",
     "get_all_flags",
+    "get_feature_rollout_metrics",
 ]

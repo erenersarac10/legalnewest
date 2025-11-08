@@ -136,18 +136,27 @@ class TokenBucket:
         capacity: int,
         refill_rate: float,
         initial_tokens: Optional[int] = None,
+        burst_multiplier: float = 1.5,  # 50% burst tolerance
     ):
         """
-        Initialize token bucket.
+        Initialize token bucket with dynamic burst scaling.
 
         Args:
-            capacity: Maximum tokens in bucket
+            capacity: Maximum tokens in bucket (base capacity)
             refill_rate: Tokens added per second
             initial_tokens: Starting tokens (default: full)
+            burst_multiplier: Burst capacity multiplier (default: 1.5 = 50% extra)
+
+        Example:
+            >>> # Base: 100 tokens/min, Burst: 150 tokens (50% extra)
+            >>> bucket = TokenBucket(capacity=100, refill_rate=1.67, burst_multiplier=1.5)
+            >>> # During peak hours, allows 50% more requests for better UX
         """
-        self.capacity = capacity
+        self.base_capacity = capacity
+        self.capacity = int(capacity * burst_multiplier)  # Burst capacity
+        self.burst_multiplier = burst_multiplier
         self.refill_rate = refill_rate
-        self.tokens = initial_tokens if initial_tokens is not None else capacity
+        self.tokens = initial_tokens if initial_tokens is not None else self.capacity
         self.last_refill = time.time()
 
     def _refill(self) -> None:
