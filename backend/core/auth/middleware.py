@@ -67,6 +67,7 @@ from backend.core.auth.service import RBACService
 from backend.core.auth.models import User, Tenant
 from backend.core.audit.service import AuditService
 from backend.core.audit.models import AuditActionEnum, AuditStatusEnum, AuditSeverityEnum
+from backend.core.config import is_rbac_enabled
 from backend.core.logging import get_logger
 
 
@@ -345,6 +346,14 @@ def require_permission(permission: str):
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
+            # Feature Flag: Skip RBAC if disabled (Harvey/Legora %100)
+            if not is_rbac_enabled():
+                logger.warning(
+                    f"RBAC is DISABLED - skipping permission check for {permission}. "
+                    "This should only be used in development!"
+                )
+                return await func(*args, **kwargs)
+
             # Extract request from kwargs
             request = kwargs.get("request")
             if not request:
