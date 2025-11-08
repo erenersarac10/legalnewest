@@ -582,6 +582,120 @@ PROMETHEUS_METRICS: Dict[str, Dict] = {
     },
 
     # ==========================================================================
+    # AUDIT TASK METRICS (Phase 4: Integrity & Monitoring)
+    # ==========================================================================
+
+    # Task Failure Tracking (Alerting)
+    "audit_task_failure_total": {
+        "type": "counter",
+        "description": "Total audit task failures (for alerting) - tracks archive, cleanup, and report generation failures",
+        "labels": ["task_name", "failure_reason", "tenant_id"],  # task_name: archive_logs, cleanup_logs, generate_report, process_batch
+    },
+    "audit_task_retry_total": {
+        "type": "counter",
+        "description": "Total audit task retries (tracks retry patterns)",
+        "labels": ["task_name", "retry_count", "tenant_id"],  # retry_count: 1, 2, 3
+    },
+    "audit_task_success_total": {
+        "type": "counter",
+        "description": "Total successful audit task completions",
+        "labels": ["task_name", "tenant_id"],
+    },
+
+    # Archive Transition Performance (Tier Migration)
+    "archive_transition_duration_seconds": {
+        "type": "histogram",
+        "description": "Archive tier transition duration (HOT→WARM→COLD→ARCHIVE) - measures data migration performance",
+        "labels": ["from_tier", "to_tier", "tenant_id"],  # from_tier/to_tier: hot, warm, cold, archive
+        "buckets": [1.0, 5.0, 10.0, 30.0, 60.0, 300.0, 600.0, 1800.0],  # 1s to 30min
+    },
+    "archive_transition_records_total": {
+        "type": "counter",
+        "description": "Total audit records transitioned between tiers",
+        "labels": ["from_tier", "to_tier", "tenant_id", "status"],  # status: success, failed
+    },
+    "archive_tier_size_bytes": {
+        "type": "gauge",
+        "description": "Current storage size per tier (for cost optimization)",
+        "labels": ["tier", "tenant_id"],  # tier: hot, warm, cold, archive
+    },
+
+    # Audit Integrity Metrics (Hash-Chain Verification)
+    "audit_integrity_check_total": {
+        "type": "counter",
+        "description": "Total audit log integrity checks performed",
+        "labels": ["result", "tenant_id"],  # result: valid, invalid, chain_broken
+    },
+    "audit_integrity_verification_duration_seconds": {
+        "type": "histogram",
+        "description": "Audit log integrity verification duration (hash-chain validation)",
+        "labels": ["tenant_id"],
+        "buckets": [0.01, 0.1, 0.5, 1.0, 5.0, 10.0],
+    },
+    "audit_integrity_chain_length": {
+        "type": "gauge",
+        "description": "Current audit log hash-chain length (number of linked events)",
+        "labels": ["tenant_id"],
+    },
+    "audit_integrity_violation_total": {
+        "type": "counter",
+        "description": "Total audit log integrity violations detected (CRITICAL - tamper evidence)",
+        "labels": ["violation_type", "tenant_id"],  # violation_type: hash_mismatch, chain_gap, missing_predecessor
+    },
+
+    # Legal Hold Metrics
+    "audit_legal_hold_active_total": {
+        "type": "gauge",
+        "description": "Total documents currently under legal hold",
+        "labels": ["tenant_id"],
+    },
+    "audit_legal_hold_placed_total": {
+        "type": "counter",
+        "description": "Total legal holds placed (litigation/investigation)",
+        "labels": ["reason_category", "tenant_id"],  # reason_category: litigation, investigation, regulatory_audit
+    },
+    "audit_legal_hold_removed_total": {
+        "type": "counter",
+        "description": "Total legal holds removed",
+        "labels": ["reason_category", "tenant_id"],
+    },
+
+    # Compliance Report Metrics
+    "audit_compliance_report_generated_total": {
+        "type": "counter",
+        "description": "Total compliance reports generated",
+        "labels": ["report_type", "framework", "tenant_id"],  # framework: GDPR, KVKK, SOC2, ISO27001
+    },
+    "audit_compliance_report_duration_seconds": {
+        "type": "histogram",
+        "description": "Compliance report generation duration",
+        "labels": ["report_type", "tenant_id"],
+        "buckets": [5.0, 10.0, 30.0, 60.0, 300.0, 600.0],  # 5s to 10min
+    },
+    "audit_compliance_event_total": {
+        "type": "counter",
+        "description": "Total compliance events logged (GDPR Article 30)",
+        "labels": ["event_type", "framework", "tenant_id"],  # event_type: DATA_ACCESS, DATA_DELETION, CONSENT_GRANTED, etc.
+    },
+
+    # Data Retention Metrics
+    "audit_retention_policy_enforced_total": {
+        "type": "counter",
+        "description": "Total retention policy enforcement actions",
+        "labels": ["action", "data_category", "tenant_id"],  # action: archived, deleted, retained
+    },
+    "audit_retention_days": {
+        "type": "gauge",
+        "description": "Current retention period (days) per data category",
+        "labels": ["data_category", "tenant_id"],
+    },
+    "audit_expired_logs_deleted_total": {
+        "type": "counter",
+        "description": "Total expired audit logs deleted (data lifecycle management)",
+        "labels": ["data_category", "tenant_id"],
+    },
+
+    # ==========================================================================
     # BUSINESS METRICS (Turkish Legal AI)
     # ==========================================================================
 
