@@ -102,12 +102,25 @@ class PermissionCache:
         """
         self.redis_url = redis_url
         self.ttl = timedelta(seconds=ttl_seconds)
+        self.ttl_seconds = ttl_seconds
         self.enable_pubsub = enable_pubsub
         self.redis_client: Optional[Redis] = None
         self.pubsub = None
 
         # Invalidation channel for pub/sub
         self.INVALIDATION_CHANNEL = "rbac:invalidation"
+
+        # Metrics tracking (Harvey/Legora %100)
+        self._cache_hits = 0
+        self._cache_misses = 0
+        self._cache_sets = 0
+        self._cache_invalidations = 0
+        self._preload_stats = {
+            "last_preload_time": None,
+            "last_preload_count": 0,
+            "last_preload_errors": 0,
+            "total_preloads": 0,
+        }
 
         if not REDIS_AVAILABLE:
             logger.warning(
@@ -205,11 +218,13 @@ class PermissionCache:
 
             if value:
                 # Cache hit
+                self._cache_hits += 1
                 permissions = set(json.loads(value))
                 logger.debug(f"Cache hit: {key} ({len(permissions)} permissions)")
                 return permissions
 
             # Cache miss
+            self._cache_misses += 1
             logger.debug(f"Cache miss: {key}")
             return None
 
@@ -252,6 +267,7 @@ class PermissionCache:
                 value,
             )
 
+            self._cache_sets += 1
             logger.debug(
                 f"Cached permissions: {key} ({len(permissions)} permissions, "
                 f"TTL={self.ttl.total_seconds()}s)"
@@ -291,6 +307,9 @@ class PermissionCache:
 
             # Delete from Redis
             deleted = await self.redis_client.delete(key)
+
+            if deleted > 0:
+                self._cache_invalidations += 1
 
             logger.info(f"Invalidated cache: {key} (deleted={deleted})")
 
@@ -346,6 +365,102 @@ class PermissionCache:
         except Exception as e:
             logger.error(f"Bulk cache invalidation error: {e}")
             return 0
+
+    def get_metrics(self) -> dict:
+        """
+        Get cache metrics for monitoring.
+
+        Harvey/Legora %100: Production metrics for Prometheus.
+
+        Returns:
+            dict: Cache metrics
+
+        Metrics:
+            - cache_hits: Total cache hits
+            - cache_misses: Total cache misses
+            - cache_sets: Total cache writes
+            - cache_invalidations: Total invalidations
+            - cache_hit_ratio: Hit ratio (0.0-1.0)
+            - preload_stats: Preload statistics
+
+        Example:
+            >>> metrics = cache.get_metrics()
+            >>> print(f"Hit ratio: {metrics['cache_hit_ratio']:.2%}")
+        """
+        total_requests = self._cache_hits + self._cache_misses
+        hit_ratio = (
+            self._cache_hits / total_requests if total_requests > 0 else 0.0
+        )
+
+        return {
+            "cache_hits": self._cache_hits,
+            "cache_misses": self._cache_misses,
+            "cache_sets": self._cache_sets,
+            "cache_invalidations": self._cache_invalidations,
+            "total_requests": total_requests,
+            "cache_hit_ratio": hit_ratio,
+            "preload_stats": self._preload_stats.copy(),
+        }
+
+    async def get_stale_ratio(self) -> float:
+        """
+        Calculate stale entry ratio.
+
+        Harvey/Legora %100: Cache health metric.
+
+        Checks how many cached entries are close to expiration (stale).
+        Stale = TTL remaining < 25% of total TTL.
+
+        Returns:
+            float: Stale ratio (0.0-1.0)
+
+        Example:
+            >>> stale_ratio = await cache.get_stale_ratio()
+            >>> if stale_ratio > 0.5:
+            ...     print("Warning: >50% of cache entries are stale")
+        """
+        if not self.redis_client:
+            return 0.0
+
+        try:
+            # Get all permission cache keys
+            pattern = "rbac:user:*:tenant:*:permissions"
+            cursor = 0
+            total_keys = 0
+            stale_keys = 0
+            stale_threshold = self.ttl_seconds * 0.25  # 25% of TTL
+
+            # Scan keys (don't use KEYS in production - use SCAN)
+            while True:
+                cursor, keys = await self.redis_client.scan(
+                    cursor=cursor,
+                    match=pattern,
+                    count=100,
+                )
+
+                for key in keys:
+                    total_keys += 1
+                    ttl = await self.redis_client.ttl(key)
+
+                    # Check if stale (TTL < 25% of total)
+                    if ttl > 0 and ttl < stale_threshold:
+                        stale_keys += 1
+
+                if cursor == 0:
+                    break
+
+            stale_ratio = stale_keys / total_keys if total_keys > 0 else 0.0
+
+            logger.debug(
+                f"Stale ratio: {stale_ratio:.2%} "
+                f"({stale_keys}/{total_keys} stale)"
+            )
+
+            return stale_ratio
+
+        except Exception as e:
+            logger.error(f"Stale ratio calculation error: {e}")
+            return 0.0
 
     async def get_cache_stats(self) -> dict:
         """
@@ -488,6 +603,12 @@ class PermissionCache:
                 f"Cache warming completed: {warmed_count} entries in {duration:.0f}ms "
                 f"({stats['entries_per_second']:.1f} entries/sec)"
             )
+
+            # Update preload stats
+            self._preload_stats["last_preload_time"] = datetime.utcnow()
+            self._preload_stats["last_preload_count"] = warmed_count
+            self._preload_stats["last_preload_errors"] = error_count
+            self._preload_stats["total_preloads"] += 1
 
             return stats
 
