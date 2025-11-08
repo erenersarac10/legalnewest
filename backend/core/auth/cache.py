@@ -120,6 +120,9 @@ class PermissionCache:
             "last_preload_count": 0,
             "last_preload_errors": 0,
             "total_preloads": 0,
+            "last_preload_duration_ms": 0.0,
+            "last_preload_success_rate": 0.0,
+            "preload_latency_p95_ms": 0.0,
         }
 
         if not REDIS_AVAILABLE:
@@ -498,49 +501,65 @@ class PermissionCache:
         self,
         db_session,
         limit: int = 1000,
+        active_days: int = 7,
     ) -> dict:
         """
-        Warm cache with most active user-tenant pairs.
+        Warm cache with most active user-tenant pairs (Adaptive Warm-up).
 
-        Harvey/Legora %100: Startup performance optimization.
+        Harvey/Legora %100: Startup performance optimization with adaptive filtering.
 
-        Pre-loads permissions for top N user-tenant pairs to avoid
+        Pre-loads permissions for recently active user-tenant pairs to avoid
         cold-start latency on first requests after deployment.
 
         Args:
             db_session: SQLAlchemy async session
             limit: Max user-tenant pairs to warm (default 1000)
+            active_days: Only warm users active in last N days (default 7)
 
         Returns:
-            dict: Warming statistics
+            dict: Warming statistics with success rate and latency metrics
 
         Example:
             >>> cache = PermissionCache()
             >>> await cache.connect()
             >>>
             >>> async with get_db_session() as session:
-            >>>     stats = await cache.warm_cache(session, limit=1000)
+            >>>     stats = await cache.warm_cache(session, limit=1000, active_days=7)
             >>> print(f"Warmed {stats['warmed_count']} cache entries in {stats['duration_ms']:.0f}ms")
+            >>> print(f"Success rate: {stats['success_rate']:.1%}, P95 latency: {stats['p95_latency_ms']:.1f}ms")
 
         Performance:
             - 1000 entries: ~2-3 seconds
             - Batch queries for efficiency
             - Non-blocking (can continue serving requests)
+
+        Adaptive Warm-up:
+            - Only warms users active in last N days (default: 7)
+            - Prioritizes by last_activity_at (most recent first)
+            - Tracks success rate and latency percentiles
         """
         if not self.redis_client:
             logger.warning("Cache warming skipped: Redis not available")
             return {"enabled": False, "warmed_count": 0}
 
-        from datetime import datetime
+        from datetime import datetime, timedelta
         from sqlalchemy import select, func
         from backend.core.auth.models import UserTenant, User
+        import time
 
         start_time = datetime.utcnow()
         warmed_count = 0
         error_count = 0
+        latency_samples = []  # Track latency for P95 calculation
 
         try:
-            logger.info(f"Starting cache warming for top {limit} user-tenant pairs...")
+            logger.info(
+                f"Starting adaptive cache warming for top {limit} user-tenant pairs "
+                f"(active in last {active_days} days)..."
+            )
+
+            # ADAPTIVE FILTERING: Only users active in last N days
+            cutoff_date = datetime.utcnow() - timedelta(days=active_days)
 
             # Query top N active user-tenant pairs
             # Ordered by last_activity_at (most recently active first)
@@ -548,6 +567,7 @@ class PermissionCache:
                 select(UserTenant.user_id, UserTenant.tenant_id)
                 .join(User, User.id == UserTenant.user_id)
                 .where(User.status == "active")
+                .where(UserTenant.last_activity_at >= cutoff_date)  # ADAPTIVE FILTER
                 .order_by(UserTenant.last_activity_at.desc())
                 .limit(limit)
             )
@@ -555,7 +575,10 @@ class PermissionCache:
             result = await db_session.execute(stmt)
             user_tenant_pairs = result.all()
 
-            logger.info(f"Found {len(user_tenant_pairs)} active user-tenant pairs")
+            logger.info(
+                f"Found {len(user_tenant_pairs)} active user-tenant pairs "
+                f"(active since {cutoff_date.isoformat()})"
+            )
 
             # Pre-load permissions for each pair
             from backend.core.auth.service import RBACService
@@ -564,6 +587,9 @@ class PermissionCache:
 
             for user_id, tenant_id in user_tenant_pairs:
                 try:
+                    # Track latency per entry
+                    entry_start = time.time()
+
                     # Get permissions from DB
                     permissions = await rbac_service.get_user_permissions(
                         user_id=user_id,
@@ -576,6 +602,10 @@ class PermissionCache:
                         tenant_id=tenant_id,
                         permissions=permissions,
                     )
+
+                    # Record latency
+                    entry_latency_ms = (time.time() - entry_start) * 1000
+                    latency_samples.append(entry_latency_ms)
 
                     warmed_count += 1
 
@@ -590,6 +620,17 @@ class PermissionCache:
 
             duration = (datetime.utcnow() - start_time).total_seconds() * 1000
 
+            # Calculate success rate
+            total_attempts = warmed_count + error_count
+            success_rate = warmed_count / total_attempts if total_attempts > 0 else 0.0
+
+            # Calculate P95 latency
+            p95_latency_ms = 0.0
+            if latency_samples:
+                latency_samples.sort()
+                p95_index = int(len(latency_samples) * 0.95)
+                p95_latency_ms = latency_samples[p95_index] if p95_index < len(latency_samples) else latency_samples[-1]
+
             stats = {
                 "enabled": True,
                 "warmed_count": warmed_count,
@@ -597,18 +638,26 @@ class PermissionCache:
                 "total_pairs": len(user_tenant_pairs),
                 "duration_ms": duration,
                 "entries_per_second": warmed_count / (duration / 1000) if duration > 0 else 0,
+                "success_rate": success_rate,
+                "p95_latency_ms": p95_latency_ms,
+                "active_days_filter": active_days,
+                "cutoff_date": cutoff_date.isoformat(),
             }
 
             logger.info(
                 f"Cache warming completed: {warmed_count} entries in {duration:.0f}ms "
-                f"({stats['entries_per_second']:.1f} entries/sec)"
+                f"({stats['entries_per_second']:.1f} entries/sec, "
+                f"success rate: {success_rate:.1%}, P95 latency: {p95_latency_ms:.1f}ms)"
             )
 
-            # Update preload stats
+            # Update preload stats with new metrics
             self._preload_stats["last_preload_time"] = datetime.utcnow()
             self._preload_stats["last_preload_count"] = warmed_count
             self._preload_stats["last_preload_errors"] = error_count
             self._preload_stats["total_preloads"] += 1
+            self._preload_stats["last_preload_duration_ms"] = duration
+            self._preload_stats["last_preload_success_rate"] = success_rate
+            self._preload_stats["preload_latency_p95_ms"] = p95_latency_ms
 
             return stats
 

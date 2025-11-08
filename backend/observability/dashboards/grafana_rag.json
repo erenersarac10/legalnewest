@@ -1,1 +1,1007 @@
-# RAG performans dashboard
+{
+  "dashboard": {
+    "id": null,
+    "uid": "rag-performance-pipeline",
+    "title": "RAG Performance - Pipeline & Quality Metrics",
+    "tags": ["rag", "retrieval", "generation", "citations", "quality"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "rag_confidence_score < 0.70",
+          "iconColor": "red",
+          "name": "Low Confidence Events",
+          "tagKeys": "quality",
+          "titleFormat": "Low Confidence Detected"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "type": "row",
+        "title": "🎯 RAG Quality SLO Targets"
+      },
+      {
+        "id": 2,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Confidence Score",
+        "targets": [
+          {
+            "expr": "rag_confidence_score",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.80,
+                  "color": "green"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 2,
+            "min": 0,
+            "max": 1
+          }
+        },
+        "description": "SLO Target: >80% (>0.80)\nAverage confidence score of RAG answers"
+      },
+      {
+        "id": 3,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Total Latency",
+        "targets": [
+          {
+            "expr": "rag_latency_ms{phase=\"total\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 2000,
+                  "color": "yellow"
+                },
+                {
+                  "value": 3000,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 0
+          }
+        },
+        "description": "SLO Target: <2000ms (2 sec)\nEnd-to-end RAG pipeline latency"
+      },
+      {
+        "id": 4,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Citation Count",
+        "targets": [
+          {
+            "expr": "rag_citation_count",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 2,
+                  "color": "yellow"
+                },
+                {
+                  "value": 3,
+                  "color": "green"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 1
+          }
+        },
+        "description": "Target: ≥3 citations/answer\nAverage number of citations per RAG answer"
+      },
+      {
+        "id": 5,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Error Rate",
+        "targets": [
+          {
+            "expr": "rag_error_rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 0.01,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.02,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 3
+          }
+        },
+        "description": "SLO Target: <2% (<0.02)\nRAG pipeline error rate"
+      },
+      {
+        "id": 6,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "type": "row",
+        "title": "⏱️ Latency Breakdown by Phase"
+      },
+      {
+        "id": 7,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Retrieval Phase",
+        "targets": [
+          {
+            "expr": "rag_latency_ms{phase=\"retrieval\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 500,
+                  "color": "yellow"
+                },
+                {
+                  "value": 1000,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 0
+          }
+        },
+        "description": "SLO Target: <500ms\nDocument retrieval latency (vector + fulltext search)"
+      },
+      {
+        "id": 8,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Assembly Phase",
+        "targets": [
+          {
+            "expr": "rag_latency_ms{phase=\"assembly\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 100,
+                  "color": "yellow"
+                },
+                {
+                  "value": 200,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 0
+          }
+        },
+        "description": "Target: <100ms\nContext assembly & re-ranking latency"
+      },
+      {
+        "id": 9,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Generation Phase",
+        "targets": [
+          {
+            "expr": "rag_latency_ms{phase=\"generation\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 1500,
+                  "color": "yellow"
+                },
+                {
+                  "value": 2500,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 0
+          }
+        },
+        "description": "Target: <1500ms\nLLM answer generation latency"
+      },
+      {
+        "id": 10,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Total Pipeline",
+        "targets": [
+          {
+            "expr": "rag_latency_ms{phase=\"total\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 2000,
+                  "color": "yellow"
+                },
+                {
+                  "value": 3000,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 0
+          }
+        },
+        "description": "SLO Target: <2000ms (2 sec)\nEnd-to-end pipeline latency"
+      },
+      {
+        "id": 11,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "type": "row",
+        "title": "📊 Context & Retrieval Metrics"
+      },
+      {
+        "id": 12,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 21
+        },
+        "type": "timeseries",
+        "title": "Context Tokens by Phase",
+        "targets": [
+          {
+            "expr": "rag_ctx_tokens{phase=\"retrieval\"}",
+            "refId": "A",
+            "legendFormat": "Retrieved Docs"
+          },
+          {
+            "expr": "rag_ctx_tokens{phase=\"assembly\"}",
+            "refId": "B",
+            "legendFormat": "Assembled Context"
+          },
+          {
+            "expr": "rag_ctx_tokens{phase=\"generation\"}",
+            "refId": "C",
+            "legendFormat": "Generated Answer"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "never",
+              "stacking": {
+                "mode": "normal",
+                "group": "A"
+              }
+            },
+            "unit": "short",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        },
+        "description": "Token flow through RAG pipeline phases"
+      },
+      {
+        "id": 13,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 21
+        },
+        "type": "timeseries",
+        "title": "Retrieval Count by Method",
+        "targets": [
+          {
+            "expr": "rag_retrieval_count{method=\"vector\"}",
+            "refId": "A",
+            "legendFormat": "Vector Search"
+          },
+          {
+            "expr": "rag_retrieval_count{method=\"fulltext\"}",
+            "refId": "B",
+            "legendFormat": "Fulltext Search"
+          },
+          {
+            "expr": "rag_retrieval_count{method=\"hybrid\"}",
+            "refId": "C",
+            "legendFormat": "Hybrid Search"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "never"
+            },
+            "unit": "short",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        },
+        "description": "Average number of documents retrieved per query by search method"
+      },
+      {
+        "id": 14,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 29
+        },
+        "type": "timeseries",
+        "title": "Latency Breakdown (Stacked)",
+        "targets": [
+          {
+            "expr": "rag_latency_ms{phase=\"retrieval\"}",
+            "refId": "A",
+            "legendFormat": "Retrieval"
+          },
+          {
+            "expr": "rag_latency_ms{phase=\"assembly\"}",
+            "refId": "B",
+            "legendFormat": "Assembly"
+          },
+          {
+            "expr": "rag_latency_ms{phase=\"generation\"}",
+            "refId": "C",
+            "legendFormat": "Generation"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "bars",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 1,
+              "fillOpacity": 80,
+              "showPoints": "never",
+              "stacking": {
+                "mode": "normal",
+                "group": "A"
+              }
+            },
+            "unit": "ms",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        },
+        "description": "Time spent in each phase (stacked bar chart)"
+      },
+      {
+        "id": 15,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 29
+        },
+        "type": "timeseries",
+        "title": "Total Latency Trend with SLO",
+        "targets": [
+          {
+            "expr": "rag_latency_ms{phase=\"total\"}",
+            "refId": "A",
+            "legendFormat": "Total Latency"
+          },
+          {
+            "expr": "2000",
+            "refId": "B",
+            "legendFormat": "SLO Target (2s)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "ms",
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 2000,
+                  "color": "yellow"
+                },
+                {
+                  "value": 3000,
+                  "color": "red"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "SLO Target (2s)"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [10, 10],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 16,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 37
+        },
+        "type": "row",
+        "title": "✨ Quality & Citation Metrics"
+      },
+      {
+        "id": 17,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 40
+        },
+        "type": "timeseries",
+        "title": "Confidence Score Trend",
+        "targets": [
+          {
+            "expr": "rag_confidence_score",
+            "refId": "A",
+            "legendFormat": "Confidence"
+          },
+          {
+            "expr": "0.80",
+            "refId": "B",
+            "legendFormat": "SLO Target (80%)"
+          },
+          {
+            "expr": "0.70",
+            "refId": "C",
+            "legendFormat": "Warning Threshold (70%)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.80,
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byRegexp",
+                "options": ".*Target.*|.*Threshold.*"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [10, 10],
+                    "fill": "dash"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 18,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 40
+        },
+        "type": "timeseries",
+        "title": "Citation Count & Error Rate",
+        "targets": [
+          {
+            "expr": "rag_citation_count",
+            "refId": "A",
+            "legendFormat": "Citations/Answer"
+          },
+          {
+            "expr": "rag_error_rate * 100",
+            "refId": "B",
+            "legendFormat": "Error Rate (%)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto",
+              "axisPlacement": "auto"
+            },
+            "unit": "short",
+            "min": 0
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Citations/Answer"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "green"
+                  }
+                },
+                {
+                  "id": "custom.axisPlacement",
+                  "value": "left"
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Error Rate (%)"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "red"
+                  }
+                },
+                {
+                  "id": "custom.axisPlacement",
+                  "value": "right"
+                },
+                {
+                  "id": "unit",
+                  "value": "percent"
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 19,
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 48
+        },
+        "type": "piechart",
+        "title": "Context Token Distribution",
+        "targets": [
+          {
+            "expr": "rag_ctx_tokens{phase=\"retrieval\"}",
+            "refId": "A",
+            "legendFormat": "Retrieved ({{phase}})"
+          },
+          {
+            "expr": "rag_ctx_tokens{phase=\"assembly\"}",
+            "refId": "B",
+            "legendFormat": "Assembled ({{phase}})"
+          },
+          {
+            "expr": "rag_ctx_tokens{phase=\"generation\"}",
+            "refId": "C",
+            "legendFormat": "Generated ({{phase}})"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "showLegend": true,
+            "values": ["value", "percent"]
+          },
+          "pieType": "donut",
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "description": "Distribution of tokens across RAG pipeline phases"
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "description": "Harvey/Legora %100: RAG Performance Dashboard for Retrieval-Augmented Generation\n\nMonitors:\n- Quality metrics (confidence score, citations)\n- Latency breakdown by phase (retrieval, assembly, generation)\n- Context token usage\n- Retrieval performance by method (vector, fulltext, hybrid)\n- Error rate tracking\n- SLO compliance\n\nSLO Targets:\n- Confidence Score: >80%\n- Total Latency: <2000ms (2 sec)\n- Retrieval Latency: <500ms\n- Generation Latency: <1500ms\n- Error Rate: <2%\n- Citations: ≥3 per answer\n\nAlert Rules:\n- ALERT if confidence <70% for 15m\n- ALERT if total latency >3000ms for 5m\n- ALERT if error rate >2% for 5m"
+  },
+  "overwrite": true,
+  "folderId": 0,
+  "folderUid": "",
+  "message": "Harvey/Legora %100: RAG Performance Dashboard with quality and latency tracking"
+}

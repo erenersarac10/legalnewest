@@ -1,1 +1,727 @@
-# Sistem kaynak kullanımı dashboard
+{
+  "dashboard": {
+    "id": null,
+    "uid": "system-resources",
+    "title": "System Resources - Infrastructure Health",
+    "tags": ["system", "resources", "elasticsearch", "infrastructure"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "es_cluster_status == 2",
+          "iconColor": "red",
+          "name": "Elasticsearch RED",
+          "tagKeys": "elasticsearch",
+          "titleFormat": "ES Cluster RED - Data Loss Risk!"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "type": "row",
+        "title": "🖥️ Application Process Resources"
+      },
+      {
+        "id": 2,
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "CPU Usage",
+        "targets": [
+          {
+            "expr": "process_cpu_percent",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 1,
+            "min": 0,
+            "max": 100
+          }
+        },
+        "description": "Application process CPU usage"
+      },
+      {
+        "id": 3,
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Memory Usage",
+        "targets": [
+          {
+            "expr": "process_memory_bytes / 1024 / 1024 / 1024",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "gbytes",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 4,
+                  "color": "yellow"
+                },
+                {
+                  "value": 6,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 2,
+            "min": 0
+          }
+        },
+        "description": "Application process memory usage in GB"
+      },
+      {
+        "id": 4,
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 16,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Uptime",
+        "targets": [
+          {
+            "expr": "process_uptime_seconds / 3600",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "h",
+            "decimals": 1,
+            "min": 0
+          }
+        },
+        "description": "Application uptime in hours"
+      },
+      {
+        "id": 5,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "type": "row",
+        "title": "🔍 Elasticsearch Cluster Health"
+      },
+      {
+        "id": 6,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Cluster Status",
+        "targets": [
+          {
+            "expr": "es_cluster_status",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 2,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "✓ GREEN",
+                    "color": "green"
+                  },
+                  "1": {
+                    "text": "⚠ YELLOW",
+                    "color": "yellow"
+                  },
+                  "2": {
+                    "text": "✗ RED",
+                    "color": "red"
+                  }
+                }
+              }
+            ],
+            "decimals": 0
+          }
+        },
+        "description": "Elasticsearch cluster health status (0=green, 1=yellow, 2=red)"
+      },
+      {
+        "id": 7,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "CPU Usage",
+        "targets": [
+          {
+            "expr": "es_cpu_percent",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 80,
+                  "color": "yellow"
+                },
+                {
+                  "value": 85,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 1,
+            "min": 0,
+            "max": 100
+          }
+        },
+        "description": "SLO Target: <80%"
+      },
+      {
+        "id": 8,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Memory Usage",
+        "targets": [
+          {
+            "expr": "es_memory_percent",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 85,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 1,
+            "min": 0,
+            "max": 100
+          }
+        },
+        "description": "SLO Target: <85%"
+      },
+      {
+        "id": 9,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Disk Usage",
+        "targets": [
+          {
+            "expr": "es_disk_percent",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 80,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 1,
+            "min": 0,
+            "max": 100
+          }
+        },
+        "description": "SLO Target: <80%"
+      },
+      {
+        "id": 10,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "type": "row",
+        "title": "📊 Elasticsearch Shards & Performance"
+      },
+      {
+        "id": 11,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 21
+        },
+        "type": "stat",
+        "title": "Active Shards",
+        "targets": [
+          {
+            "expr": "es_active_shards",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        },
+        "description": "Number of active shards in the cluster"
+      },
+      {
+        "id": 12,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 21
+        },
+        "type": "stat",
+        "title": "Unassigned Shards",
+        "targets": [
+          {
+            "expr": "es_unassigned_shards",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "red"
+                }
+              ]
+            },
+            "decimals": 0
+          }
+        },
+        "description": "Should be 0 - any value >0 indicates cluster issues"
+      },
+      {
+        "id": 13,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 21
+        },
+        "type": "stat",
+        "title": "Relocating Shards",
+        "targets": [
+          {
+            "expr": "es_relocating_shards",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        },
+        "description": "Shards being relocated between nodes"
+      },
+      {
+        "id": 14,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 21
+        },
+        "type": "stat",
+        "title": "Initializing Shards",
+        "targets": [
+          {
+            "expr": "es_initializing_shards",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        },
+        "description": "Shards being initialized"
+      },
+      {
+        "id": 15,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 27
+        },
+        "type": "timeseries",
+        "title": "Elasticsearch Resource Usage",
+        "targets": [
+          {
+            "expr": "es_cpu_percent",
+            "refId": "A",
+            "legendFormat": "CPU %"
+          },
+          {
+            "expr": "es_memory_percent",
+            "refId": "B",
+            "legendFormat": "Memory %"
+          },
+          {
+            "expr": "es_disk_percent",
+            "refId": "C",
+            "legendFormat": "Disk %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 16,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 27
+        },
+        "type": "timeseries",
+        "title": "Application Resource Usage",
+        "targets": [
+          {
+            "expr": "process_cpu_percent",
+            "refId": "A",
+            "legendFormat": "CPU %"
+          },
+          {
+            "expr": "process_memory_bytes / 1024 / 1024 / 1024 / 8 * 100",
+            "refId": "B",
+            "legendFormat": "Memory % (of 8GB)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "description": "Harvey/Legora %100: System Resources & Infrastructure Health\n\nMonitors:\n- Application process (CPU, memory, uptime)\n- Elasticsearch cluster health\n- ES resource usage (CPU, memory, disk)\n- Shard distribution & status\n\nSLO Targets:\n- ES Cluster Status: GREEN (0)\n- ES CPU: <80%\n- ES Memory: <85%\n- ES Disk: <80%\n- Unassigned Shards: 0\n\nAlert Rules:\n- ALERT if ES cluster RED (immediate)\n- ALERT if ES CPU >85% for 5m\n- ALERT if ES memory >90% for 5m\n- ALERT if unassigned shards >0 for 10m"
+  },
+  "overwrite": true,
+  "folderId": 0,
+  "folderUid": "",
+  "message": "Harvey/Legora %100: System Resources Dashboard with infrastructure health"
+}

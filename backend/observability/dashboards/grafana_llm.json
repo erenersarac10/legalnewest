@@ -1,1 +1,884 @@
-# LLM performans dashboard
+{
+  "dashboard": {
+    "id": null,
+    "uid": "llm-performance-embeddings",
+    "title": "LLM Performance - Embeddings & Cost Tracking",
+    "tags": ["llm", "embeddings", "openai", "cost", "performance"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "embedding_circuit_state > 0",
+          "iconColor": "red",
+          "name": "Circuit Breaker Events",
+          "tagKeys": "circuit_breaker",
+          "titleFormat": "Circuit Breaker Opened"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "type": "row",
+        "title": "💰 Cost Overview & Budget Tracking"
+      },
+      {
+        "id": 2,
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Total Embedding Cost (Last 24h)",
+        "targets": [
+          {
+            "expr": "increase(embedding_total_cost_usd[24h])",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 50,
+                  "color": "yellow"
+                },
+                {
+                  "value": 100,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 2
+          }
+        },
+        "description": "Total cost of embedding API calls in the last 24 hours. Budget alert: >$100/day"
+      },
+      {
+        "id": 3,
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Projected Monthly Cost",
+        "targets": [
+          {
+            "expr": "increase(embedding_total_cost_usd[24h]) * 30",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 1500,
+                  "color": "yellow"
+                },
+                {
+                  "value": 3000,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 0
+          }
+        },
+        "description": "Projected monthly cost based on last 24h usage. Budget: <$3000/month"
+      },
+      {
+        "id": 4,
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 16,
+          "y": 3
+        },
+        "type": "stat",
+        "title": "Cost Per 1M Tokens",
+        "targets": [
+          {
+            "expr": "increase(embedding_total_cost_usd[1h]) / (increase(embedding_tokens_total[1h]) / 1000000)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 0.15,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.20,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 4
+          }
+        },
+        "description": "Cost efficiency metric. OpenAI text-embedding-3-small: $0.02/1M tokens"
+      },
+      {
+        "id": 5,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "type": "row",
+        "title": "🎯 Cache Efficiency & Performance SLOs"
+      },
+      {
+        "id": 6,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Cache Hit Ratio (OpenAI)",
+        "targets": [
+          {
+            "expr": "embedding_hit_ratio{provider=\"openai\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.80,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.95,
+                  "color": "green"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 2
+          }
+        },
+        "description": "SLO Target: >95% (>0.95)\nHigher cache hit ratio = lower API costs"
+      },
+      {
+        "id": 7,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Cache Hit Latency",
+        "targets": [
+          {
+            "expr": "embedding_latency_ms{cached=\"true\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 100,
+                  "color": "yellow"
+                },
+                {
+                  "value": 200,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 1
+          }
+        },
+        "description": "SLO Target: <100ms\nCache hit latency (Redis lookup)"
+      },
+      {
+        "id": 8,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "API Call Latency",
+        "targets": [
+          {
+            "expr": "embedding_latency_ms{cached=\"false\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 500,
+                  "color": "yellow"
+                },
+                {
+                  "value": 1000,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [],
+            "decimals": 0
+          }
+        },
+        "description": "SLO Target: <500ms\nOpenAI API call latency (cache miss)"
+      },
+      {
+        "id": 9,
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 12
+        },
+        "type": "stat",
+        "title": "Circuit Breaker Status",
+        "targets": [
+          {
+            "expr": "embedding_circuit_state{provider=\"openai\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "green"
+                },
+                {
+                  "value": 0.5,
+                  "color": "yellow"
+                },
+                {
+                  "value": 1,
+                  "color": "red"
+                }
+              ]
+            },
+            "mappings": [
+              {
+                "type": "value",
+                "options": {
+                  "0": {
+                    "text": "CLOSED ✓",
+                    "color": "green"
+                  },
+                  "0.5": {
+                    "text": "HALF-OPEN ⚠",
+                    "color": "yellow"
+                  },
+                  "1": {
+                    "text": "OPEN ✗",
+                    "color": "red"
+                  }
+                }
+              }
+            ],
+            "decimals": 0
+          }
+        },
+        "description": "Circuit breaker state:\n0=Closed (healthy)\n0.5=Half-open (testing)\n1=Open (failing)"
+      },
+      {
+        "id": 10,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "type": "row",
+        "title": "📊 Request Rate & Token Usage"
+      },
+      {
+        "id": 11,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 21
+        },
+        "type": "timeseries",
+        "title": "Embedding Request Rate by Provider",
+        "targets": [
+          {
+            "expr": "rate(embedding_request_total{provider=\"openai\"}[5m])",
+            "refId": "A",
+            "legendFormat": "OpenAI"
+          },
+          {
+            "expr": "rate(embedding_request_total{provider=\"azure_openai\"}[5m])",
+            "refId": "B",
+            "legendFormat": "Azure OpenAI"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "never"
+            },
+            "unit": "reqps",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 12,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 21
+        },
+        "type": "timeseries",
+        "title": "Token Usage Rate",
+        "targets": [
+          {
+            "expr": "rate(embedding_tokens_total{provider=\"openai\"}[5m])",
+            "refId": "A",
+            "legendFormat": "Tokens/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 30,
+              "showPoints": "never",
+              "gradientMode": "opacity"
+            },
+            "unit": "short",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 13,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 29
+        },
+        "type": "timeseries",
+        "title": "Cache Hit Ratio Trend",
+        "targets": [
+          {
+            "expr": "embedding_hit_ratio{provider=\"openai\"}",
+            "refId": "A",
+            "legendFormat": "OpenAI"
+          },
+          {
+            "expr": "embedding_hit_ratio{provider=\"azure_openai\"}",
+            "refId": "B",
+            "legendFormat": "Azure OpenAI"
+          },
+          {
+            "expr": "0.95",
+            "refId": "C",
+            "legendFormat": "SLO Target (95%)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "never"
+            },
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": null,
+                  "color": "red"
+                },
+                {
+                  "value": 0.8,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.95,
+                  "color": "green"
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "SLO Target (95%)"
+              },
+              "properties": [
+                {
+                  "id": "custom.lineStyle",
+                  "value": {
+                    "dash": [10, 10],
+                    "fill": "dash"
+                  }
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 14,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 29
+        },
+        "type": "timeseries",
+        "title": "Latency Comparison: Cache Hit vs Miss",
+        "targets": [
+          {
+            "expr": "embedding_latency_ms{cached=\"true\"}",
+            "refId": "A",
+            "legendFormat": "Cache Hit (<100ms SLO)"
+          },
+          {
+            "expr": "embedding_latency_ms{cached=\"false\"}",
+            "refId": "B",
+            "legendFormat": "API Call (<500ms SLO)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "showPoints": "auto"
+            },
+            "unit": "ms",
+            "min": 0
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 15,
+        "gridPos": {
+          "h": 3,
+          "w": 24,
+          "x": 0,
+          "y": 37
+        },
+        "type": "row",
+        "title": "💸 Cost Analysis & Optimization"
+      },
+      {
+        "id": 16,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 40
+        },
+        "type": "timeseries",
+        "title": "Cumulative Cost Trend",
+        "targets": [
+          {
+            "expr": "embedding_total_cost_usd",
+            "refId": "A",
+            "legendFormat": "Total Cost"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 30,
+              "showPoints": "never",
+              "gradientMode": "hue"
+            },
+            "unit": "currencyUSD",
+            "min": 0,
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        }
+      },
+      {
+        "id": 17,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 40
+        },
+        "type": "timeseries",
+        "title": "Cost Savings from Cache (Estimated)",
+        "targets": [
+          {
+            "expr": "rate(embedding_request_total{provider=\"openai\"}[5m]) * embedding_hit_ratio{provider=\"openai\"} * 0.00002 * 100",
+            "refId": "A",
+            "legendFormat": "Savings/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "bars",
+              "lineInterpolation": "linear",
+              "barAlignment": 0,
+              "lineWidth": 1,
+              "fillOpacity": 80,
+              "showPoints": "never"
+            },
+            "unit": "currencyUSD",
+            "min": 0,
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "green"
+            }
+          }
+        },
+        "options": {
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          },
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          }
+        },
+        "description": "Estimated cost savings from cache hits (avoided API calls)"
+      },
+      {
+        "id": 18,
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 48
+        },
+        "type": "table",
+        "title": "LLM Metrics Summary",
+        "targets": [
+          {
+            "expr": "embedding_hit_ratio",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "embedding_latency_ms",
+            "refId": "B",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "embedding_request_total",
+            "refId": "C",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "embedding_tokens_total",
+            "refId": "D",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "auto"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true,
+          "sortBy": []
+        },
+        "transformations": [
+          {
+            "id": "merge",
+            "options": {}
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true
+              },
+              "indexByName": {},
+              "renameByName": {
+                "provider": "Provider",
+                "cached": "Cached",
+                "Value": "Value"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "templating": {
+      "list": []
+    },
+    "description": "Harvey/Legora %100: LLM Performance Dashboard for Embedding Service\n\nMonitors:\n- Cost tracking & budget alerts ($100/day, $3000/month)\n- Cache efficiency & hit ratio (SLO: >95%)\n- API latency (cache hit <100ms, API call <500ms)\n- Token usage & request rate\n- Circuit breaker status\n- Cost savings from caching\n\nSLO Targets:\n- Cache Hit Ratio: >95%\n- Cache Hit Latency: <100ms\n- API Call Latency: <500ms\n- Daily Budget: <$100\n- Monthly Budget: <$3000\n\nAlert Rules:\n- ALERT if daily cost >$100 for 1h\n- ALERT if cache hit ratio <80% for 10m\n- ALERT if circuit breaker opens"
+  },
+  "overwrite": true,
+  "folderId": 0,
+  "folderUid": "",
+  "message": "Harvey/Legora %100: LLM Performance Dashboard with cost tracking and cache efficiency"
+}
