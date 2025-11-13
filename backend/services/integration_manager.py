@@ -14,39 +14,34 @@ World-class external integration management for Turkish Legal AI:
 - Data synchronization (bi-directional)
 - Error handling and logging
 - Integration analytics and monitoring
-- Turkish legal system integrations (UYAP, e-Devlet, MERN0S)
+- Turkish legal system integrations (e-Devlet, MERNÄ°S)
 
 Why Integration Manager?
-    Without: Manual data entry ’ errors ’ disconnected systems ’ inefficiency
-    With: Seamless integrations ’ automated sync ’ unified platform ’ productivity
+    Without: Manual data entry ï¿½ errors ï¿½ disconnected systems ï¿½ inefficiency
+    With: Seamless integrations ï¿½ automated sync ï¿½ unified platform ï¿½ productivity
 
     Impact: 90% manual work eliminated + zero data entry errors! =
 
 Architecture:
-    [External Systems] ” [IntegrationManager]
-                              “
-        [Auth Manager] ’ [API Client Pool]
-                              “
-        [Rate Limiter] ’ [Circuit Breaker]
-                              “
-        [Webhook Handler] ’ [Data Sync Engine]
-                              “
-        [Health Monitor] ’ [Analytics]
+    [External Systems] ï¿½ [IntegrationManager]
+                              ï¿½
+        [Auth Manager] ï¿½ [API Client Pool]
+                              ï¿½
+        [Rate Limiter] ï¿½ [Circuit Breaker]
+                              ï¿½
+        [Webhook Handler] ï¿½ [Data Sync Engine]
+                              ï¿½
+        [Health Monitor] ï¿½ [Analytics]
 
 Supported Integrations:
 
     1. Legal Databases (Hukuki Veritabanlar1):
         - Kazanc1 Hukuk (Turkish case law)
         - Lexpera (Legal research)
-        - 0çtihat Bilgi Bankas1
+        - 0ï¿½tihat Bilgi Bankas1
         - Yarg1tay Kararlar1 Arama
 
-    2. Court Systems (Mahkeme Sistemleri):
-        - UYAP (National Judiciary Informatics System)
-        - e-Tebligat (Electronic service)
-        - e-0cra (Electronic execution)
-
-    3. Government Systems (Devlet Sistemleri):
+    2. Government Systems (Devlet Sistemleri):
         - e-Devlet Gateway
         - MERN0S (Population registry)
         - Vergi Kimlik Numaras1 validation
@@ -64,7 +59,7 @@ Supported Integrations:
         - Microsoft Teams
         - Slack
 
-    6. Document Management (Belge Yönetimi):
+    6. Document Management (Belge Yï¿½netimi):
         - Dropbox
         - Google Drive
         - OneDrive
@@ -78,7 +73,7 @@ Supported Integrations:
 
 Integration Types:
 
-    1. Pull Integration (Çekme):
+    1. Pull Integration (ï¿½ekme):
         - Scheduled data fetching
         - Polling for updates
         - Batch synchronization
@@ -88,7 +83,7 @@ Integration Types:
         - Real-time event processing
         - Streaming data
 
-    3. Bi-directional Sync (0ki Yönlü):
+    3. Bi-directional Sync (0ki Yï¿½nlï¿½):
         - Conflict resolution
         - Change tracking
         - Merge strategies
@@ -148,15 +143,15 @@ Usage:
     >>>
     >>> # Register new integration
     >>> integration = await manager.register_integration(
-    ...     name="UYAP",
-    ...     integration_type=IntegrationType.COURT_SYSTEM,
+    ...     name="KazancÄ± Hukuk",
+    ...     integration_type=IntegrationType.LEGAL_DATABASE,
     ...     auth_config={"api_key": "xxx", "secret": "yyy"},
     ... )
     >>>
     >>> # Make API call
     >>> result = await manager.call_integration(
-    ...     integration_id="UYAP",
-    ...     endpoint="/api/cases",
+    ...     integration_id="kazanci_hukuk",
+    ...     endpoint="/api/search",
     ...     method="GET",
     ... )
 """
@@ -437,9 +432,9 @@ class IntegrationManager:
 
         Example:
             >>> integration = await manager.register_integration(
-            ...     name="UYAP",
-            ...     integration_type=IntegrationType.COURT_SYSTEM,
-            ...     base_url="https://uyap.gov.tr/api",
+            ...     name="KazancÄ± Hukuk",
+            ...     integration_type=IntegrationType.LEGAL_DATABASE,
+            ...     base_url="https://api.kazanci.com.tr",
             ...     auth_config=AuthConfig(method=AuthMethod.API_KEY, credentials={"key": "xxx"}),
             ... )
         """

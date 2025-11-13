@@ -11,7 +11,7 @@ Document Types:
     - International: AİHM, AB mevzuatı
 
 Key Features:
-    - Turkish legal system specifics (Resmi Gazete, UYAP)
+    - Turkish legal system specifics (Resmi Gazete, e-Mevzuat)
     - Rich metadata (jurisdiction, hierarchy, effectivity)
     - Citation tracking and validation
     - Version management (amendments, repeals)
@@ -99,7 +99,6 @@ class SourceType(str, Enum):
     YARGITAY = "yargitay"
     DANISTAY = "danistay"
     ANAYASA_MAHKEMESI = "anayasa_mahkemesi"
-    UYAP = "uyap"
     KAZANCI = "kazanci"
     LEXPERA = "lexpera"
     KVKK = "kvkk"
