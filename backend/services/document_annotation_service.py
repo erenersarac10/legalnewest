@@ -1,66 +1,60 @@
 """
-Document Annotation Service - Harvey/Legora %100 Turkish Legal AI Document Markup Engine.
+Document Annotation Service - Harvey/Legora Turkish Legal AI Personal Notes System.
 
-Production-ready collaborative annotation system:
+Production-ready individual annotation system:
 - Text highlights with color coding
-- Inline comments and notes
-- Threaded discussions on annotations
-- Annotation types (note, highlight, bookmark, question, issue, clarification)
-- @mentions and notifications
-- Search across annotations
+- Personal notes and comments
+- Annotation types (note, highlight, bookmark, question, issue)
+- Search across your annotations
 - Export annotations (PDF, DOCX, JSON)
-- Real-time collaboration
 - Annotation templates (standard legal review markers)
 - Bulk annotation operations
-- Annotation analytics (most commented sections)
-- Permission-based visibility (private vs team vs public)
+- Personal annotation analytics
 
 Why Document Annotation?
-    Without: Context lost → poor collaboration → missed insights
-    With: Rich markup → team alignment → better analysis
+    Without: Context lost → no reference points → missed insights
+    With: Rich personal markup → better analysis → faster review
 
-    Impact: 80% faster document review + 95% better collaboration! 📝
+    Impact: 80% faster document review with personal notes! 📝
 
 Annotation Architecture:
     [Document] → [AnnotationService]
                         ↓
             ┌───────────┼───────────┐
             │           │           │
-        [Create]   [Thread]    [Search]
+        [Create]   [Update]    [Search]
             │           │           │
             └───────────┼───────────┘
                         ↓
-            [Real-time Sync]
-                        ↓
-            [Notifications]
+                   [Personal DB]
 
 Annotation Types:
     - NOTE: General observation/comment
     - HIGHLIGHT: Important text marking
     - BOOKMARK: Quick reference point
-    - QUESTION: Request clarification
+    - QUESTION: Question about content
     - ISSUE: Potential problem identified
-    - CLARIFICATION: Response to question
     - APPROVAL: Section approved
     - REJECTION: Section needs revision
+    - CITATION: Legal reference marker
+    - DEFINITION: Term definition
 
 Turkish Legal Use Cases:
-    - Contract review with legal team
-    - Case file collaborative analysis
-    - Legislative draft comments
-    - Court decision annotation
-    - Precedent highlighting
+    - Personal contract review notes
+    - Case file analysis markers
+    - Legislative reading comments
+    - Court decision highlights
+    - Precedent bookmarking
 
 Performance:
     - Create annotation: < 50ms (p95)
     - Get annotations: < 100ms (p95, with caching)
     - Search annotations: < 200ms (p95)
-    - Real-time sync: < 500ms (WebSocket)
 
 Usage:
     >>> annot_svc = DocumentAnnotationService(db_session, redis)
     >>>
-    >>> # Create annotation
+    >>> # Create personal annotation
     >>> annotation = await annot_svc.create_annotation(
     ...     document_id=doc_id,
     ...     user_id=user_id,
@@ -71,28 +65,21 @@ Usage:
     ...     tags=["tmk", "conflict"],
     ... )
     >>>
-    >>> # Reply to annotation (threading)
-    >>> reply = await annot_svc.reply_to_annotation(
-    ...     annotation_id=annotation.id,
-    ...     user_id=another_user_id,
-    ...     content="Haklısın, düzeltilmeli"
-    ... )
-    >>>
-    >>> # Search annotations
+    >>> # Search your annotations
     >>> results = await annot_svc.search_annotations(
     ...     document_id=doc_id,
-    ...     query="TMK",
-    ...     annotation_type=AnnotationType.ISSUE
+    ...     user_id=user_id,
+    ...     query="TMK"
     ... )
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Set
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional, List, Dict, Any
 from uuid import UUID, uuid4
 from enum import Enum
 
-from sqlalchemy import select, and_, or_, func
+from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.logging import get_logger
@@ -120,27 +107,19 @@ class AnnotationType(str, Enum):
     NOTE = "note"                      # General observation
     HIGHLIGHT = "highlight"            # Important text
     BOOKMARK = "bookmark"              # Quick reference
-    QUESTION = "question"              # Request clarification
+    QUESTION = "question"              # Question about content
     ISSUE = "issue"                    # Potential problem
-    CLARIFICATION = "clarification"    # Response to question
     APPROVAL = "approval"              # Section approved
     REJECTION = "rejection"            # Needs revision
     CITATION = "citation"              # Legal reference
     DEFINITION = "definition"          # Term definition
 
 
-class AnnotationVisibility(str, Enum):
-    """Visibility levels for annotations."""
-    PRIVATE = "private"      # Only creator can see
-    TEAM = "team"            # Team members can see
-    PUBLIC = "public"        # Everyone can see
-
-
 class AnnotationStatus(str, Enum):
-    """Annotation resolution status."""
-    OPEN = "open"            # Active discussion
+    """Annotation status."""
+    OPEN = "open"            # Active note
     RESOLVED = "resolved"    # Issue resolved
-    CLOSED = "closed"        # No longer relevant
+    ARCHIVED = "archived"    # No longer relevant
 
 
 # =============================================================================
@@ -150,7 +129,7 @@ class AnnotationStatus(str, Enum):
 
 @dataclass
 class Annotation:
-    """Document annotation with threading support."""
+    """Personal document annotation (always private to user)."""
     id: UUID
     document_id: UUID
     user_id: UUID
@@ -166,34 +145,16 @@ class Annotation:
 
     # Classification
     annotation_type: AnnotationType
-    visibility: AnnotationVisibility
     status: AnnotationStatus
 
     # Metadata
     tags: List[str]
-    mentioned_users: List[UUID]
-
-    # Threading
-    parent_id: Optional[UUID]  # For threaded replies
-    reply_count: int
+    color: Optional[str]  # Highlight color (hex)
 
     # Timestamps
     created_at: datetime
     updated_at: Optional[datetime]
     resolved_at: Optional[datetime]
-    resolved_by: Optional[UUID]
-
-    # User info (denormalized for performance)
-    user_name: str
-    user_avatar: Optional[str]
-
-
-@dataclass
-class AnnotationThread:
-    """Thread of annotations (parent + replies)."""
-    parent: Annotation
-    replies: List[Annotation]
-    total_replies: int
 
 
 @dataclass
@@ -208,14 +169,24 @@ class AnnotationSearchResult:
 
 @dataclass
 class AnnotationStats:
-    """Annotation statistics for document."""
+    """Personal annotation statistics for document."""
     total_annotations: int
     by_type: Dict[str, int]
-    by_user: Dict[str, int]
     by_status: Dict[str, int]
+    most_used_tags: List[Tuple[str, int]]
     most_annotated_sections: List[Dict[str, Any]]
-    active_discussions: int
+    active_notes: int
     resolved_issues: int
+    created_last_7days: int
+    created_last_30days: int
+
+
+@dataclass
+class BulkAnnotationResult:
+    """Result of bulk annotation operation."""
+    success_count: int
+    failed_count: int
+    failed_items: List[Dict[str, Any]]
 
 
 # =============================================================================
@@ -225,9 +196,11 @@ class AnnotationStats:
 
 class DocumentAnnotationService:
     """
-    Document annotation service.
+    Personal document annotation service.
 
-    Harvey/Legora %100: Collaborative legal document review.
+    Harvey/Legora Turkish Legal AI: Private notes and highlights.
+
+    All annotations are private to the user (no sharing/collaboration).
     """
 
     # Cache TTL
@@ -236,23 +209,33 @@ class DocumentAnnotationService:
     # Annotation templates
     LEGAL_REVIEW_TEMPLATES = {
         "contract_review": [
-            "Check liability clauses",
-            "Verify termination conditions",
-            "Review payment terms",
-            "Validate force majeure",
+            "Sorumluluk maddelerini kontrol et",
+            "Fesih koşullarını doğrula",
+            "Ödeme şartlarını incele",
+            "Mücbir sebep maddesini gözden geçir",
         ],
         "case_analysis": [
-            "Identify key facts",
-            "List legal arguments",
-            "Note precedents",
-            "Highlight evidence",
+            "Ana olayları belirle",
+            "Hukuki argümanları listele",
+            "İçtihatları not et",
+            "Delilleri vurgula",
         ],
         "legislative_draft": [
-            "Constitutional compliance",
-            "Consistency check",
-            "Clarity review",
-            "Impact assessment",
+            "Anayasaya uygunluk",
+            "Tutarlılık kontrolü",
+            "Netlik incelemesi",
+            "Etki değerlendirmesi",
         ],
+    }
+
+    # Highlight colors
+    HIGHLIGHT_COLORS = {
+        "yellow": "#FFFF00",
+        "green": "#00FF00",
+        "blue": "#00BFFF",
+        "red": "#FF6B6B",
+        "purple": "#9B59B6",
+        "orange": "#FFA500",
     }
 
     def __init__(
@@ -265,7 +248,7 @@ class DocumentAnnotationService:
 
         Args:
             db_session: Database session
-            redis_client: Redis for caching/real-time
+            redis_client: Redis for caching
         """
         self.db_session = db_session
         self.redis = redis_client if REDIS_AVAILABLE else None
@@ -287,14 +270,12 @@ class DocumentAnnotationService:
         selected_text: Optional[str] = None,
         page_number: Optional[int] = None,
         tags: Optional[List[str]] = None,
-        mentioned_users: Optional[List[UUID]] = None,
-        visibility: AnnotationVisibility = AnnotationVisibility.TEAM,
-        parent_id: Optional[UUID] = None,
+        color: Optional[str] = None,
     ) -> Annotation:
         """
-        Create annotation on document.
+        Create personal annotation on document.
 
-        Harvey/Legora %100: Rich annotation with threading.
+        Harvey/Legora: Personal notes system (always private).
 
         Args:
             document_id: Document ID
@@ -306,12 +287,13 @@ class DocumentAnnotationService:
             selected_text: Text that was selected
             page_number: Page number (if applicable)
             tags: Tags for categorization
-            mentioned_users: @mentioned user IDs
-            visibility: Who can see this annotation
-            parent_id: Parent annotation ID (for threading)
+            color: Highlight color (hex)
 
         Returns:
             Annotation: Created annotation
+
+        Raises:
+            ValidationError: If positions are invalid
 
         Example:
             >>> annotation = await annot_svc.create_annotation(
@@ -322,6 +304,7 @@ class DocumentAnnotationService:
             ...     end_pos=1567,
             ...     annotation_type=AnnotationType.ISSUE,
             ...     tags=["tmk", "conflict"],
+            ...     color="#FF6B6B"
             ... )
         """
         # Validate positions
@@ -331,99 +314,172 @@ class DocumentAnnotationService:
         if end_pos - start_pos > 10000:
             raise ValidationError("Annotation span too large (max 10,000 chars)")
 
-        # Get user info (for denormalization)
-        user_name = await self._get_user_name(user_id)
+        # Validate content
+        if not content or not content.strip():
+            raise ValidationError("Annotation content cannot be empty")
 
         # Create annotation
         annotation = Annotation(
             id=uuid4(),
             document_id=document_id,
             user_id=user_id,
-            content=content,
+            content=content.strip(),
             selected_text=selected_text,
             start_pos=start_pos,
             end_pos=end_pos,
             page_number=page_number,
             annotation_type=annotation_type,
-            visibility=visibility,
             status=AnnotationStatus.OPEN,
             tags=tags or [],
-            mentioned_users=mentioned_users or [],
-            parent_id=parent_id,
-            reply_count=0,
+            color=color or self.HIGHLIGHT_COLORS.get("yellow"),
             created_at=datetime.utcnow(),
             updated_at=None,
             resolved_at=None,
-            resolved_by=None,
-            user_name=user_name,
-            user_avatar=None,
         )
 
         # TODO: Save to database
         # await self._save_annotation(annotation)
 
-        # Update parent reply count if this is a reply
-        if parent_id:
-            await self._increment_reply_count(parent_id)
-
         # Invalidate cache
         if self.redis:
-            await self._invalidate_document_cache(document_id)
-
-        # Send notifications to mentioned users
-        if mentioned_users:
-            await self._send_mention_notifications(annotation, mentioned_users)
-
-        # Real-time sync
-        await self._broadcast_annotation(annotation, "created")
+            await self._invalidate_user_document_cache(user_id, document_id)
 
         logger.info(
-            "Annotation created",
-            annotation_id=str(annotation.id),
-            document_id=str(document_id),
-            type=annotation_type.value,
+            f"Annotation created: {annotation.id} by user {user_id} "
+            f"on document {document_id} (type={annotation_type.value})"
         )
 
         return annotation
 
-    async def reply_to_annotation(
+    async def create_bulk_annotations(
         self,
-        annotation_id: UUID,
+        document_id: UUID,
         user_id: UUID,
-        content: str,
-        mentioned_users: Optional[List[UUID]] = None,
-    ) -> Annotation:
+        annotations: List[Dict[str, Any]],
+    ) -> BulkAnnotationResult:
         """
-        Reply to existing annotation (threading).
+        Create multiple annotations at once.
 
         Args:
-            annotation_id: Parent annotation ID
-            user_id: User replying
-            content: Reply content
-            mentioned_users: @mentioned users
+            document_id: Document ID
+            user_id: User creating annotations
+            annotations: List of annotation data dicts
 
         Returns:
-            Annotation: Reply annotation
-        """
-        # Get parent annotation
-        parent = await self.get_annotation(annotation_id)
-        if not parent:
-            raise NotFoundError(f"Annotation not found: {annotation_id}")
+            BulkAnnotationResult with success/failure counts
 
-        # Create reply
-        reply = await self.create_annotation(
-            document_id=parent.document_id,
-            user_id=user_id,
-            content=content,
-            start_pos=parent.start_pos,
-            end_pos=parent.end_pos,
-            annotation_type=AnnotationType.CLARIFICATION,
-            parent_id=annotation_id,
-            mentioned_users=mentioned_users,
-            visibility=parent.visibility,
+        Example:
+            >>> result = await annot_svc.create_bulk_annotations(
+            ...     document_id=doc_id,
+            ...     user_id=user_id,
+            ...     annotations=[
+            ...         {
+            ...             "content": "Note 1",
+            ...             "start_pos": 100,
+            ...             "end_pos": 200,
+            ...             "annotation_type": "note"
+            ...         },
+            ...         {
+            ...             "content": "Highlight 2",
+            ...             "start_pos": 500,
+            ...             "end_pos": 600,
+            ...             "annotation_type": "highlight"
+            ...         }
+            ...     ]
+            ... )
+        """
+        success_count = 0
+        failed_count = 0
+        failed_items = []
+
+        for idx, annot_data in enumerate(annotations):
+            try:
+                await self.create_annotation(
+                    document_id=document_id,
+                    user_id=user_id,
+                    content=annot_data["content"],
+                    start_pos=annot_data["start_pos"],
+                    end_pos=annot_data["end_pos"],
+                    annotation_type=AnnotationType(annot_data.get("annotation_type", "note")),
+                    selected_text=annot_data.get("selected_text"),
+                    page_number=annot_data.get("page_number"),
+                    tags=annot_data.get("tags", []),
+                    color=annot_data.get("color"),
+                )
+                success_count += 1
+            except Exception as e:
+                failed_count += 1
+                failed_items.append({
+                    "index": idx,
+                    "data": annot_data,
+                    "error": str(e),
+                })
+                logger.warning(f"Failed to create annotation at index {idx}: {e}")
+
+        logger.info(
+            f"Bulk annotation: {success_count} success, {failed_count} failed "
+            f"for user {user_id} on document {document_id}"
         )
 
-        return reply
+        return BulkAnnotationResult(
+            success_count=success_count,
+            failed_count=failed_count,
+            failed_items=failed_items,
+        )
+
+    async def create_from_template(
+        self,
+        document_id: UUID,
+        user_id: UUID,
+        template_type: str,
+        start_pos: int,
+    ) -> List[Annotation]:
+        """
+        Create annotations from predefined template.
+
+        Args:
+            document_id: Document ID
+            user_id: User ID
+            template_type: Template type (e.g., "contract_review")
+            start_pos: Starting position for annotations
+
+        Returns:
+            List of created annotations
+
+        Example:
+            >>> annotations = await annot_svc.create_from_template(
+            ...     document_id=doc_id,
+            ...     user_id=user_id,
+            ...     template_type="contract_review",
+            ...     start_pos=0
+            ... )
+        """
+        template = self.LEGAL_REVIEW_TEMPLATES.get(template_type, [])
+        if not template:
+            raise ValidationError(f"Unknown template type: {template_type}")
+
+        created_annotations = []
+        current_pos = start_pos
+
+        for template_text in template:
+            annotation = await self.create_annotation(
+                document_id=document_id,
+                user_id=user_id,
+                content=template_text,
+                start_pos=current_pos,
+                end_pos=current_pos + 10,  # Placeholder span
+                annotation_type=AnnotationType.NOTE,
+                tags=[template_type],
+            )
+            created_annotations.append(annotation)
+            current_pos += 100  # Space between template annotations
+
+        logger.info(
+            f"Created {len(created_annotations)} annotations from template "
+            f"'{template_type}' for user {user_id}"
+        )
+
+        return created_annotations
 
     # =========================================================================
     # GET ANNOTATIONS
@@ -432,23 +488,25 @@ class DocumentAnnotationService:
     async def get_annotation(
         self,
         annotation_id: UUID,
-        user_id: Optional[UUID] = None,
+        user_id: UUID,
     ) -> Optional[Annotation]:
         """
         Get annotation by ID.
 
+        Only returns annotation if it belongs to the requesting user.
+
         Args:
             annotation_id: Annotation ID
-            user_id: Requesting user (for permission check)
+            user_id: Requesting user (must be owner)
 
         Returns:
             Optional[Annotation]: Annotation or None
         """
-        # TODO: Query database
-        # Check visibility permissions
+        # TODO: Query database with user_id check
+        # SELECT * FROM annotations WHERE id = ? AND user_id = ?
         return None
 
-    async def get_document_annotations(
+    async def get_user_document_annotations(
         self,
         document_id: UUID,
         user_id: UUID,
@@ -456,18 +514,18 @@ class DocumentAnnotationService:
         annotation_types: Optional[List[AnnotationType]] = None,
     ) -> List[Annotation]:
         """
-        Get all annotations for document.
+        Get all personal annotations for document.
 
-        Harvey/Legora %100: Fast retrieval with caching.
+        Harvey/Legora: Fast retrieval with caching.
 
         Args:
             document_id: Document ID
-            user_id: Requesting user
+            user_id: User ID (only returns this user's annotations)
             include_resolved: Include resolved annotations
             annotation_types: Filter by types
 
         Returns:
-            List[Annotation]: Annotations
+            List[Annotation]: User's personal annotations
 
         Performance:
             - Cached: < 10ms
@@ -475,58 +533,60 @@ class DocumentAnnotationService:
         """
         # Check cache
         if self.redis and not annotation_types:
-            cached = await self._get_cached_annotations(document_id)
+            cached = await self._get_cached_user_annotations(user_id, document_id)
             if cached:
-                logger.info("Annotation cache hit", document_id=str(document_id))
+                logger.debug(
+                    f"Annotation cache hit for user {user_id}, document {document_id}"
+                )
                 return cached
 
-        # TODO: Query database with filters
+        # TODO: Query database with user_id filter
+        # SELECT * FROM annotations
+        # WHERE document_id = ? AND user_id = ?
+        # ORDER BY created_at DESC
         annotations = []
 
         # Filter by status
         if not include_resolved:
-            annotations = [a for a in annotations if a.status != AnnotationStatus.RESOLVED]
+            annotations = [
+                a for a in annotations
+                if a.status != AnnotationStatus.RESOLVED
+            ]
 
         # Filter by type
         if annotation_types:
-            annotations = [a for a in annotations if a.annotation_type in annotation_types]
-
-        # Filter by visibility/permissions
-        annotations = await self._filter_by_permissions(annotations, user_id)
+            annotations = [
+                a for a in annotations
+                if a.annotation_type in annotation_types
+            ]
 
         # Cache result
         if self.redis:
-            await self._cache_annotations(document_id, annotations)
+            await self._cache_user_annotations(user_id, document_id, annotations)
 
         return annotations
 
-    async def get_annotation_thread(
+    async def get_all_user_annotations(
         self,
-        annotation_id: UUID,
         user_id: UUID,
-    ) -> AnnotationThread:
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[Annotation]:
         """
-        Get annotation with all replies (thread).
+        Get all annotations by user (across all documents).
 
         Args:
-            annotation_id: Parent annotation ID
-            user_id: Requesting user
+            user_id: User ID
+            limit: Max results
+            offset: Pagination offset
 
         Returns:
-            AnnotationThread: Parent + replies
+            List[Annotation]: All user's annotations
         """
-        parent = await self.get_annotation(annotation_id, user_id)
-        if not parent:
-            raise NotFoundError(f"Annotation not found: {annotation_id}")
-
-        # Get all replies
-        replies = await self._get_replies(annotation_id, user_id)
-
-        return AnnotationThread(
-            parent=parent,
-            replies=replies,
-            total_replies=len(replies),
-        )
+        # TODO: Query database
+        # SELECT * FROM annotations WHERE user_id = ?
+        # ORDER BY created_at DESC LIMIT ? OFFSET ?
+        return []
 
     # =========================================================================
     # UPDATE ANNOTATIONS
@@ -539,35 +599,44 @@ class DocumentAnnotationService:
         content: Optional[str] = None,
         tags: Optional[List[str]] = None,
         annotation_type: Optional[AnnotationType] = None,
+        color: Optional[str] = None,
     ) -> Annotation:
         """
-        Update annotation content.
+        Update personal annotation.
 
         Args:
             annotation_id: Annotation ID
-            user_id: User updating
+            user_id: User updating (must be owner)
             content: New content
             tags: New tags
             annotation_type: New type
+            color: New color
 
         Returns:
             Annotation: Updated annotation
+
+        Raises:
+            NotFoundError: If annotation not found
+            PermissionDeniedError: If user is not owner
         """
         annotation = await self.get_annotation(annotation_id, user_id)
         if not annotation:
-            raise NotFoundError(f"Annotation not found: {annotation_id}")
-
-        # Check permission
-        if annotation.user_id != user_id:
-            raise PermissionDeniedError("Cannot edit others' annotations")
+            raise NotFoundError(f"Annotation {annotation_id} not found")
 
         # Update fields
         if content is not None:
-            annotation.content = content
+            if not content.strip():
+                raise ValidationError("Annotation content cannot be empty")
+            annotation.content = content.strip()
+
         if tags is not None:
             annotation.tags = tags
+
         if annotation_type is not None:
             annotation.annotation_type = annotation_type
+
+        if color is not None:
+            annotation.color = color
 
         annotation.updated_at = datetime.utcnow()
 
@@ -575,12 +644,9 @@ class DocumentAnnotationService:
 
         # Invalidate cache
         if self.redis:
-            await self._invalidate_document_cache(annotation.document_id)
+            await self._invalidate_user_document_cache(user_id, annotation.document_id)
 
-        # Real-time sync
-        await self._broadcast_annotation(annotation, "updated")
-
-        logger.info("Annotation updated", annotation_id=str(annotation_id))
+        logger.info(f"Annotation {annotation_id} updated by user {user_id}")
 
         return annotation
 
@@ -588,38 +654,64 @@ class DocumentAnnotationService:
         self,
         annotation_id: UUID,
         user_id: UUID,
-        resolution_comment: Optional[str] = None,
     ) -> Annotation:
         """
         Mark annotation as resolved.
 
         Args:
             annotation_id: Annotation ID
-            user_id: User resolving
-            resolution_comment: Optional resolution note
+            user_id: User resolving (must be owner)
 
         Returns:
             Annotation: Resolved annotation
         """
         annotation = await self.get_annotation(annotation_id, user_id)
         if not annotation:
-            raise NotFoundError(f"Annotation not found: {annotation_id}")
+            raise NotFoundError(f"Annotation {annotation_id} not found")
 
         annotation.status = AnnotationStatus.RESOLVED
         annotation.resolved_at = datetime.utcnow()
-        annotation.resolved_by = user_id
-
-        # Add resolution comment as reply
-        if resolution_comment:
-            await self.reply_to_annotation(
-                annotation_id=annotation_id,
-                user_id=user_id,
-                content=f"**Resolved:** {resolution_comment}",
-            )
+        annotation.updated_at = datetime.utcnow()
 
         # TODO: Save to database
 
-        logger.info("Annotation resolved", annotation_id=str(annotation_id))
+        # Invalidate cache
+        if self.redis:
+            await self._invalidate_user_document_cache(user_id, annotation.document_id)
+
+        logger.info(f"Annotation {annotation_id} resolved by user {user_id}")
+
+        return annotation
+
+    async def archive_annotation(
+        self,
+        annotation_id: UUID,
+        user_id: UUID,
+    ) -> Annotation:
+        """
+        Archive annotation (soft delete).
+
+        Args:
+            annotation_id: Annotation ID
+            user_id: User archiving (must be owner)
+
+        Returns:
+            Annotation: Archived annotation
+        """
+        annotation = await self.get_annotation(annotation_id, user_id)
+        if not annotation:
+            raise NotFoundError(f"Annotation {annotation_id} not found")
+
+        annotation.status = AnnotationStatus.ARCHIVED
+        annotation.updated_at = datetime.utcnow()
+
+        # TODO: Save to database
+
+        # Invalidate cache
+        if self.redis:
+            await self._invalidate_user_document_cache(user_id, annotation.document_id)
+
+        logger.info(f"Annotation {annotation_id} archived by user {user_id}")
 
         return annotation
 
@@ -629,27 +721,61 @@ class DocumentAnnotationService:
         user_id: UUID,
     ) -> None:
         """
-        Delete annotation.
+        Delete annotation permanently.
 
         Args:
             annotation_id: Annotation ID
-            user_id: User deleting
+            user_id: User deleting (must be owner)
+
+        Raises:
+            NotFoundError: If annotation not found
         """
         annotation = await self.get_annotation(annotation_id, user_id)
         if not annotation:
-            raise NotFoundError(f"Annotation not found: {annotation_id}")
+            raise NotFoundError(f"Annotation {annotation_id} not found")
 
-        # Check permission
-        if annotation.user_id != user_id:
-            raise PermissionDeniedError("Cannot delete others' annotations")
-
-        # TODO: Soft delete from database
+        # TODO: Hard delete from database
+        # DELETE FROM annotations WHERE id = ? AND user_id = ?
 
         # Invalidate cache
         if self.redis:
-            await self._invalidate_document_cache(annotation.document_id)
+            await self._invalidate_user_document_cache(user_id, annotation.document_id)
 
-        logger.info("Annotation deleted", annotation_id=str(annotation_id))
+        logger.info(f"Annotation {annotation_id} deleted by user {user_id}")
+
+    async def delete_all_document_annotations(
+        self,
+        document_id: UUID,
+        user_id: UUID,
+    ) -> int:
+        """
+        Delete all user's annotations on a document.
+
+        Args:
+            document_id: Document ID
+            user_id: User ID
+
+        Returns:
+            int: Number of annotations deleted
+        """
+        annotations = await self.get_user_document_annotations(
+            document_id, user_id, include_resolved=True
+        )
+
+        deleted_count = 0
+        for annotation in annotations:
+            try:
+                await self.delete_annotation(annotation.id, user_id)
+                deleted_count += 1
+            except Exception as e:
+                logger.warning(f"Failed to delete annotation {annotation.id}: {e}")
+
+        logger.info(
+            f"Deleted {deleted_count} annotations for user {user_id} "
+            f"on document {document_id}"
+        )
+
+        return deleted_count
 
     # =========================================================================
     # SEARCH ANNOTATIONS
@@ -662,23 +788,21 @@ class DocumentAnnotationService:
         query: Optional[str] = None,
         annotation_type: Optional[AnnotationType] = None,
         tags: Optional[List[str]] = None,
-        user_filter: Optional[UUID] = None,
         status: Optional[AnnotationStatus] = None,
         page: int = 1,
         page_size: int = 50,
     ) -> AnnotationSearchResult:
         """
-        Search annotations with filters.
+        Search personal annotations with filters.
 
-        Harvey/Legora %100: Fast full-text search.
+        Harvey/Legora: Fast full-text search in personal notes.
 
         Args:
             document_id: Document ID
-            user_id: Requesting user
+            user_id: User ID (only searches this user's annotations)
             query: Search query (full-text)
             annotation_type: Filter by type
             tags: Filter by tags
-            user_filter: Filter by user
             status: Filter by status
             page: Page number
             page_size: Results per page
@@ -689,8 +813,8 @@ class DocumentAnnotationService:
         Performance:
             - < 200ms (p95)
         """
-        # Get all annotations
-        annotations = await self.get_document_annotations(
+        # Get all user's annotations for document
+        annotations = await self.get_user_document_annotations(
             document_id, user_id, include_resolved=True
         )
 
@@ -700,20 +824,27 @@ class DocumentAnnotationService:
             annotations = [
                 a for a in annotations
                 if query_lower in a.content.lower() or
-                   (a.selected_text and query_lower in a.selected_text.lower())
+                   (a.selected_text and query_lower in a.selected_text.lower()) or
+                   any(query_lower in tag.lower() for tag in a.tags)
             ]
 
         if annotation_type:
-            annotations = [a for a in annotations if a.annotation_type == annotation_type]
+            annotations = [
+                a for a in annotations
+                if a.annotation_type == annotation_type
+            ]
 
         if tags:
-            annotations = [a for a in annotations if any(t in a.tags for t in tags)]
-
-        if user_filter:
-            annotations = [a for a in annotations if a.user_id == user_filter]
+            annotations = [
+                a for a in annotations
+                if any(t in a.tags for t in tags)
+            ]
 
         if status:
-            annotations = [a for a in annotations if a.status == status]
+            annotations = [
+                a for a in annotations
+                if a.status == status
+            ]
 
         # Calculate facets
         facets = self._calculate_facets(annotations)
@@ -732,6 +863,27 @@ class DocumentAnnotationService:
             facets=facets,
         )
 
+    async def search_all_annotations(
+        self,
+        user_id: UUID,
+        query: str,
+        limit: int = 50,
+    ) -> List[Annotation]:
+        """
+        Search across all user's annotations (all documents).
+
+        Args:
+            user_id: User ID
+            query: Search query
+            limit: Max results
+
+        Returns:
+            List[Annotation]: Matching annotations across all documents
+        """
+        # TODO: Full-text search across all user's annotations
+        # Use PostgreSQL full-text search or Elasticsearch
+        return []
+
     # =========================================================================
     # STATISTICS
     # =========================================================================
@@ -742,16 +894,16 @@ class DocumentAnnotationService:
         user_id: UUID,
     ) -> AnnotationStats:
         """
-        Get annotation statistics for document.
+        Get personal annotation statistics for document.
 
         Args:
             document_id: Document ID
-            user_id: Requesting user
+            user_id: User ID
 
         Returns:
-            AnnotationStats: Statistics
+            AnnotationStats: Personal statistics
         """
-        annotations = await self.get_document_annotations(
+        annotations = await self.get_user_document_annotations(
             document_id, user_id, include_resolved=True
         )
 
@@ -760,61 +912,124 @@ class DocumentAnnotationService:
         for a in annotations:
             by_type[a.annotation_type.value] = by_type.get(a.annotation_type.value, 0) + 1
 
-        # Count by user
-        by_user = {}
-        for a in annotations:
-            by_user[str(a.user_id)] = by_user.get(str(a.user_id), 0) + 1
-
         # Count by status
         by_status = {}
         for a in annotations:
             by_status[a.status.value] = by_status.get(a.status.value, 0) + 1
 
-        # Most annotated sections
-        # TODO: Implement section analysis
+        # Most used tags
+        tag_counts = {}
+        for a in annotations:
+            for tag in a.tags:
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+        most_used_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        # Time-based counts
+        now = datetime.utcnow()
+        week_ago = now - timedelta(days=7)
+        month_ago = now - timedelta(days=30)
+
+        created_last_7days = len([
+            a for a in annotations if a.created_at >= week_ago
+        ])
+        created_last_30days = len([
+            a for a in annotations if a.created_at >= month_ago
+        ])
+
+        # Most annotated sections (simplified)
         most_annotated = []
 
         return AnnotationStats(
             total_annotations=len(annotations),
             by_type=by_type,
-            by_user=by_user,
             by_status=by_status,
+            most_used_tags=most_used_tags,
             most_annotated_sections=most_annotated,
-            active_discussions=by_status.get("open", 0),
+            active_notes=by_status.get("open", 0),
             resolved_issues=by_status.get("resolved", 0),
+            created_last_7days=created_last_7days,
+            created_last_30days=created_last_30days,
         )
+
+    async def get_global_user_stats(
+        self,
+        user_id: UUID,
+    ) -> Dict[str, Any]:
+        """
+        Get global annotation statistics for user (all documents).
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Dict with global statistics
+        """
+        # TODO: Query all user's annotations across documents
+        return {
+            "total_annotations": 0,
+            "total_documents_annotated": 0,
+            "by_type": {},
+            "by_status": {},
+            "created_last_7days": 0,
+            "created_last_30days": 0,
+        }
+
+    # =========================================================================
+    # EXPORT
+    # =========================================================================
+
+    async def export_annotations(
+        self,
+        document_id: UUID,
+        user_id: UUID,
+        format: str = "json",
+    ) -> Dict[str, Any]:
+        """
+        Export personal annotations.
+
+        Args:
+            document_id: Document ID
+            user_id: User ID
+            format: Export format (json, csv, markdown)
+
+        Returns:
+            Dict with export data
+
+        Supported formats:
+            - json: JSON format
+            - csv: CSV format
+            - markdown: Markdown format
+        """
+        annotations = await self.get_user_document_annotations(
+            document_id, user_id, include_resolved=True
+        )
+
+        if format == "json":
+            return {
+                "document_id": str(document_id),
+                "user_id": str(user_id),
+                "exported_at": datetime.utcnow().isoformat(),
+                "total_count": len(annotations),
+                "annotations": [
+                    {
+                        "id": str(a.id),
+                        "content": a.content,
+                        "type": a.annotation_type.value,
+                        "position": {"start": a.start_pos, "end": a.end_pos},
+                        "tags": a.tags,
+                        "status": a.status.value,
+                        "created_at": a.created_at.isoformat(),
+                    }
+                    for a in annotations
+                ],
+            }
+
+        # TODO: Implement CSV and Markdown formats
+        raise ValidationError(f"Unsupported export format: {format}")
 
     # =========================================================================
     # HELPER METHODS
     # =========================================================================
-
-    async def _get_user_name(self, user_id: UUID) -> str:
-        """Get user name for annotation."""
-        # TODO: Query user service
-        return "User"
-
-    async def _increment_reply_count(self, annotation_id: UUID) -> None:
-        """Increment reply count for parent annotation."""
-        # TODO: Update database
-        pass
-
-    async def _get_replies(
-        self,
-        parent_id: UUID,
-        user_id: UUID,
-    ) -> List[Annotation]:
-        """Get all replies to annotation."""
-        # TODO: Query database
-        return []
-
-    async def _filter_by_permissions(
-        self,
-        annotations: List[Annotation],
-        user_id: UUID,
-    ) -> List[Annotation]:
-        """Filter annotations by user permissions."""
-        # TODO: Check visibility permissions
-        return annotations
 
     def _calculate_facets(
         self,
@@ -823,7 +1038,6 @@ class DocumentAnnotationService:
         """Calculate faceted search results."""
         facets = {
             "types": {},
-            "users": {},
             "status": {},
             "tags": {},
         }
@@ -832,10 +1046,6 @@ class DocumentAnnotationService:
             # Type facets
             facets["types"][a.annotation_type.value] = \
                 facets["types"].get(a.annotation_type.value, 0) + 1
-
-            # User facets
-            user_str = str(a.user_id)
-            facets["users"][user_str] = facets["users"].get(user_str, 0) + 1
 
             # Status facets
             facets["status"][a.status.value] = \
@@ -847,60 +1057,44 @@ class DocumentAnnotationService:
 
         return facets
 
-    async def _send_mention_notifications(
-        self,
-        annotation: Annotation,
-        mentioned_users: List[UUID],
-    ) -> None:
-        """Send notifications to mentioned users."""
-        # TODO: Integrate with notification service
-        pass
-
-    async def _broadcast_annotation(
-        self,
-        annotation: Annotation,
-        action: str,
-    ) -> None:
-        """Broadcast annotation change via WebSocket."""
-        # TODO: Integrate with WebSocket service
-        pass
-
     # =========================================================================
     # CACHE MANAGEMENT
     # =========================================================================
 
-    async def _get_cached_annotations(
+    async def _get_cached_user_annotations(
         self,
+        user_id: UUID,
         document_id: UUID,
     ) -> Optional[List[Annotation]]:
-        """Get cached annotations."""
+        """Get cached user annotations for document."""
         if not self.redis:
             return None
 
         # TODO: Implement cache retrieval
         return None
 
-    async def _cache_annotations(
+    async def _cache_user_annotations(
         self,
+        user_id: UUID,
         document_id: UUID,
         annotations: List[Annotation],
     ) -> None:
-        """Cache annotations."""
+        """Cache user annotations for document."""
         if not self.redis:
             return
 
-        # TODO: Implement caching
-        pass
+        # TODO: Implement caching with Redis
 
-    async def _invalidate_document_cache(
+    async def _invalidate_user_document_cache(
         self,
+        user_id: UUID,
         document_id: UUID,
     ) -> None:
-        """Invalidate document annotation cache."""
+        """Invalidate user's document annotation cache."""
         if not self.redis:
             return
 
-        key = f"annotations:{document_id}"
+        key = f"annotations:{user_id}:{document_id}"
         await self.redis.delete(key)
 
 
@@ -912,10 +1106,9 @@ class DocumentAnnotationService:
 __all__ = [
     "DocumentAnnotationService",
     "Annotation",
-    "AnnotationThread",
     "AnnotationSearchResult",
     "AnnotationStats",
+    "BulkAnnotationResult",
     "AnnotationType",
-    "AnnotationVisibility",
     "AnnotationStatus",
 ]
