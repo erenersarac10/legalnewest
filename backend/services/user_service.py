@@ -33,11 +33,9 @@ User Management Architecture:
         [Audit Log] + [KVKK Compliance]
 
 Turkish Legal Features:
-    - TC Kimlik No verification (encrypted storage)
-    - Baro (bar association) verification
-    - Professional type management (Avukat, Hakim, Savcı)
-    - e-İmza integration preparation
-    - UYAP integration preparation
+    - User preferences and settings
+    - Turkish legal professional support
+    - Multi-language support (TR/EN)
 
 KVKK/GDPR Compliance:
     - Data export (portable format)

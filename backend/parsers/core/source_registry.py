@@ -8,7 +8,6 @@ Supported Sources:
     Government:
         - Resmi Gazete (resmigazete.gov.tr)
         - Mevzuat Bilgi Sistemi (mevzuat.gov.tr)
-        - UYAP (Ulusal Yargı Ağı Projesi)
         - TBMM (tbmm.gov.tr)
 
     Courts:

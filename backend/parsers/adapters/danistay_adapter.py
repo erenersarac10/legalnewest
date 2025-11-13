@@ -4,7 +4,7 @@ Danıştay Adapter - Council of State Decision Scraper
 Scrapes administrative law decisions from Danıştay (Turkish Council of State),
 the supreme court for administrative and tax law cases in Turkey.
 
-Data Source: https://www.danistay.gov.tr/ and https://uyap.danistay.gov.tr/
+Data Source: https://www.danistay.gov.tr/
 Archive: 1868 - Present (157 years of administrative case law)
 Update Frequency: Daily (new decisions published regularly)
 
@@ -93,7 +93,6 @@ from backend.parsers.topic_classifier import classify_danistay_decision
 
 # Danıştay endpoints
 DANISTAY_BASE_URL = "https://www.danistay.gov.tr"
-DANISTAY_UYAP_URL = "https://uyap.danistay.gov.tr"
 DANISTAY_SEARCH_URL = f"{DANISTAY_BASE_URL}/search"
 
 
@@ -232,7 +231,7 @@ class DanistayAdapter(BaseAdapter):
         if karar_no:
             params["karar_no"] = karar_no
 
-        return f"{DANISTAY_UYAP_URL}/decision?{urlencode(params)}"
+        return f"{DANISTAY_BASE_URL}/decision?{urlencode(params)}"
 
     async def fetch_document(self, document_id: str) -> LegalDocument:
         """
