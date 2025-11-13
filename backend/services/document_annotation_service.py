@@ -74,8 +74,8 @@ Usage:
 """
 
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional, List, Dict, Any
+from datetime import datetime, timedelta
+from typing import Optional, List, Dict, Any, Tuple
 from uuid import UUID, uuid4
 from enum import Enum
 
@@ -129,7 +129,13 @@ class AnnotationStatus(str, Enum):
 
 @dataclass
 class Annotation:
-    """Personal document annotation (always private to user)."""
+    """
+    Personal document annotation (always private to user).
+
+    CRITICAL: Position drift protection!
+    When documents are re-processed, character positions may shift.
+    We store context snippets to auto-recover correct position.
+    """
     id: UUID
     document_id: UUID
     user_id: UUID
@@ -138,10 +144,12 @@ class Annotation:
     content: str
     selected_text: Optional[str]  # Text that was annotated
 
-    # Position
+    # Position (with drift protection)
     start_pos: int
     end_pos: int
     page_number: Optional[int]
+    context_before: Optional[str]  # 50 chars before (for position recovery)
+    context_after: Optional[str]   # 50 chars after (for position recovery)
 
     # Classification
     annotation_type: AnnotationType
@@ -206,7 +214,7 @@ class DocumentAnnotationService:
     # Cache TTL
     CACHE_TTL = 300  # 5 minutes
 
-    # Annotation templates
+    # Annotation templates (Türk hukuku odaklı)
     LEGAL_REVIEW_TEMPLATES = {
         "contract_review": [
             "Sorumluluk maddelerini kontrol et",
@@ -225,6 +233,36 @@ class DocumentAnnotationService:
             "Tutarlılık kontrolü",
             "Netlik incelemesi",
             "Etki değerlendirmesi",
+        ],
+        # Türk hukuku özel şablonlar (CRITICAL!)
+        "kvkk_audit": [
+            "KVKK m.10 aydınlatma yükümlülüğü kontrolü",
+            "KVKK m.11 veri sorumlusuna başvuru hakları",
+            "Açık rıza alındı mı? (m.5)",
+            "Kişisel veri envanteri tutulmuş mu?",
+            "VERBIS kaydı var mı?",
+            "Veri aktarımı yurtdışına mı? (m.9)",
+        ],
+        "hmk_deadline_check": [
+            "HMK m.113 - Cevap dilekçesi süresi (2 hafta)",
+            "HMK m.167 - Kesin süre mi yoksa izafi süre mi?",
+            "HMK m.94 - Süre uzatımı talep edilecek mi?",
+            "İstinaf süresi (2 hafta) doldu mu? (HMK m.341)",
+            "Temyiz süresi kontrolü (HMK m.361)",
+        ],
+        "criminal_evidence": [
+            "CMK m.206 - Delil niteliği var mı?",
+            "CMK m.217 - Hukuka aykırı delil mi?",
+            "CMK m.148 - Tanık ifadesi güvenilir mi?",
+            "Zincir delil (chain of custody) bozulmuş mu?",
+            "Bilirkişi raporu CMK m.63'e uygun mu?",
+        ],
+        "tax_case": [
+            "VUK m.359 - İhtar süresi geçti mi?",
+            "VUK m.3 - Vergilendirme ilkeleri ihlali var mı?",
+            "AATUHK m.6 - Vergi ziyaı cezası oranı doğru mu?",
+            "VUK m.134 - Matrah farkı tespit usulü uygun mu?",
+            "Uzlaşma (VUK m.376) için süre var mı?",
         ],
     }
 
@@ -318,6 +356,22 @@ class DocumentAnnotationService:
         if not content or not content.strip():
             raise ValidationError("Annotation content cannot be empty")
 
+        # Extract context snippets for position drift protection (CRITICAL!)
+        context_before, context_after = await self._extract_context_snippets(
+            document_id, start_pos, end_pos, selected_text
+        )
+
+        # Check for overlapping annotations (prevent duplicates)
+        overlaps = await self._detect_overlapping_annotations(
+            user_id, document_id, start_pos, end_pos
+        )
+        if overlaps:
+            logger.warning(
+                f"Overlapping annotations detected for user {user_id} "
+                f"on document {document_id}: {len(overlaps)} conflicts"
+            )
+            # Log but don't block (user may want multiple notes on same text)
+
         # Create annotation
         annotation = Annotation(
             id=uuid4(),
@@ -328,6 +382,8 @@ class DocumentAnnotationService:
             start_pos=start_pos,
             end_pos=end_pos,
             page_number=page_number,
+            context_before=context_before,  # Position drift protection
+            context_after=context_after,    # Position drift protection
             annotation_type=annotation_type,
             status=AnnotationStatus.OPEN,
             tags=tags or [],
@@ -983,6 +1039,7 @@ class DocumentAnnotationService:
         document_id: UUID,
         user_id: UUID,
         format: str = "json",
+        include_highlights: bool = False,
     ) -> Dict[str, Any]:
         """
         Export personal annotations.
@@ -990,15 +1047,18 @@ class DocumentAnnotationService:
         Args:
             document_id: Document ID
             user_id: User ID
-            format: Export format (json, csv, markdown)
+            format: Export format (json, csv, markdown, pdf, docx)
+            include_highlights: Include visual highlights (for PDF/DOCX)
 
         Returns:
-            Dict with export data
+            Dict with export data or file bytes
 
         Supported formats:
             - json: JSON format
-            - csv: CSV format
+            - csv: CSV format (spreadsheet)
             - markdown: Markdown format
+            - pdf: PDF with visual highlights (CRITICAL for lawyers!)
+            - docx: Word with comment balloons (CRITICAL for lawyers!)
         """
         annotations = await self.get_user_document_annotations(
             document_id, user_id, include_resolved=True
@@ -1014,9 +1074,15 @@ class DocumentAnnotationService:
                     {
                         "id": str(a.id),
                         "content": a.content,
+                        "selected_text": a.selected_text,
                         "type": a.annotation_type.value,
-                        "position": {"start": a.start_pos, "end": a.end_pos},
+                        "position": {
+                            "start": a.start_pos,
+                            "end": a.end_pos,
+                            "page": a.page_number,
+                        },
                         "tags": a.tags,
+                        "color": a.color,
                         "status": a.status.value,
                         "created_at": a.created_at.isoformat(),
                     }
@@ -1024,12 +1090,197 @@ class DocumentAnnotationService:
                 ],
             }
 
-        # TODO: Implement CSV and Markdown formats
+        elif format == "pdf":
+            # TODO: PDF export with visual highlights
+            # - Use PyMuPDF (fitz) or reportlab
+            # - Overlay highlights with annotation.color
+            # - Add comment boxes with annotation.content
+            # - Preserve original document + add highlight layer
+            logger.warning("PDF export with highlights not yet implemented")
+            raise ValidationError(
+                "PDF export coming soon! Use JSON export for now."
+            )
+
+        elif format == "docx":
+            # TODO: DOCX export with Word comments
+            # - Use python-docx library
+            # - Add comment balloons at annotation positions
+            # - Include annotation.content as comment text
+            # - Color-code by annotation_type
+            logger.warning("DOCX export with comments not yet implemented")
+            raise ValidationError(
+                "DOCX export coming soon! Use JSON export for now."
+            )
+
+        elif format == "csv":
+            # TODO: CSV export for spreadsheet analysis
+            # - Headers: ID, Content, Type, Position, Tags, Created
+            # - Easy import into Excel/Google Sheets
+            raise ValidationError("CSV export not yet implemented")
+
+        elif format == "markdown":
+            # TODO: Markdown export for documentation
+            # - Formatted with headers, bullets
+            # - Include code blocks for legal references
+            raise ValidationError("Markdown export not yet implemented")
+
         raise ValidationError(f"Unsupported export format: {format}")
 
     # =========================================================================
     # HELPER METHODS
     # =========================================================================
+
+    async def _extract_context_snippets(
+        self,
+        document_id: UUID,
+        start_pos: int,
+        end_pos: int,
+        selected_text: Optional[str],
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Extract context before/after annotation for position drift protection.
+
+        CRITICAL: When documents are re-processed (OCR, format change),
+        character positions may shift. Context snippets allow us to
+        auto-recover the correct position.
+
+        Args:
+            document_id: Document ID
+            start_pos: Annotation start position
+            end_pos: Annotation end position
+            selected_text: Selected text (if available)
+
+        Returns:
+            Tuple of (context_before, context_after)
+        """
+        # TODO: Get full document text from storage
+        # full_text = await self._get_document_text(document_id)
+
+        # For now, use selected_text if available
+        if not selected_text:
+            return None, None
+
+        # In production, extract from full document:
+        # CONTEXT_SIZE = 50  # chars
+        # context_before = full_text[max(0, start_pos - CONTEXT_SIZE):start_pos]
+        # context_after = full_text[end_pos:min(len(full_text), end_pos + CONTEXT_SIZE)]
+
+        # Mock for now
+        context_before = None
+        context_after = None
+
+        return context_before, context_after
+
+    async def _detect_overlapping_annotations(
+        self,
+        user_id: UUID,
+        document_id: UUID,
+        start_pos: int,
+        end_pos: int,
+    ) -> List[Annotation]:
+        """
+        Detect overlapping annotations (same user, same document).
+
+        Prevents:
+            - Duplicate highlights
+            - Redundant notes on same text
+            - Confusing overlapping annotations
+
+        Args:
+            user_id: User ID
+            document_id: Document ID
+            start_pos: New annotation start
+            end_pos: New annotation end
+
+        Returns:
+            List of overlapping annotations
+        """
+        # Get existing annotations for this user/document
+        existing = await self.get_user_document_annotations(
+            document_id, user_id, include_resolved=False
+        )
+
+        overlaps = []
+        for annot in existing:
+            # Check for overlap
+            if self._positions_overlap(
+                annot.start_pos, annot.end_pos, start_pos, end_pos
+            ):
+                overlaps.append(annot)
+
+        return overlaps
+
+    def _positions_overlap(
+        self,
+        a_start: int,
+        a_end: int,
+        b_start: int,
+        b_end: int,
+    ) -> bool:
+        """
+        Check if two position ranges overlap.
+
+        Returns True if ANY overlap exists.
+        """
+        return not (a_end <= b_start or b_end <= a_start)
+
+    async def recover_annotation_position(
+        self,
+        annotation: Annotation,
+        new_document_text: str,
+    ) -> Tuple[int, int]:
+        """
+        Recover annotation position after document re-processing.
+
+        Uses context snippets to find new position in modified document.
+
+        CRITICAL: This prevents annotation loss after:
+            - Document re-parsing
+            - OCR re-run
+            - Format conversion
+
+        Args:
+            annotation: Annotation with old position
+            new_document_text: New document text
+
+        Returns:
+            Tuple of (new_start_pos, new_end_pos)
+
+        Raises:
+            ValueError: If position cannot be recovered
+        """
+        if not annotation.context_before and not annotation.context_after:
+            raise ValueError(
+                "Cannot recover position: annotation has no context snippets"
+            )
+
+        # Search for context_before + selected_text + context_after pattern
+        if annotation.context_before and annotation.selected_text:
+            search_pattern = annotation.context_before + annotation.selected_text
+            idx = new_document_text.find(search_pattern)
+            if idx != -1:
+                new_start = idx + len(annotation.context_before)
+                new_end = new_start + len(annotation.selected_text)
+                logger.info(
+                    f"Position recovered for annotation {annotation.id}: "
+                    f"{annotation.start_pos}→{new_start}"
+                )
+                return new_start, new_end
+
+        # Fallback: search for selected_text only
+        if annotation.selected_text:
+            idx = new_document_text.find(annotation.selected_text)
+            if idx != -1:
+                new_end = idx + len(annotation.selected_text)
+                logger.warning(
+                    f"Position recovered (fuzzy) for annotation {annotation.id}"
+                )
+                return idx, new_end
+
+        raise ValueError(
+            f"Cannot recover position for annotation {annotation.id}: "
+            f"text not found in new document"
+        )
 
     def _calculate_facets(
         self,

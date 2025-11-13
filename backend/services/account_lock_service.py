@@ -215,6 +215,23 @@ class SuspiciousActivityPattern:
     recommendation: str  # lock, monitor, notify_admin
 
 
+@dataclass
+class LoginRiskScore:
+    """
+    Login risk assessment (CRITICAL for production security).
+
+    Combines multiple risk factors to calculate overall threat level.
+    """
+    total_score: float  # 0-100 (higher = riskier)
+    ip_risk: float  # 0-25
+    device_risk: float  # 0-25
+    geo_risk: float  # 0-25
+    time_risk: float  # 0-25
+    risk_level: str  # low, medium, high, critical
+    requires_mfa: bool  # Force MFA if true
+    evidence: Dict[str, Any]
+
+
 # ============================================================================
 # SERVICE
 # ============================================================================
@@ -497,20 +514,39 @@ class AccountLockService:
         unlocked_by: UUID,
         reason: str,
         unlock_method: UnlockMethod = UnlockMethod.ADMIN_OVERRIDE,
+        mfa_verified: bool = False,
     ) -> None:
         """
         Manually unlock account (admin action).
+
+        CRITICAL SECURITY: High-severity locks require MFA verification!
 
         Args:
             user_id: User ID to unlock
             unlocked_by: Admin user performing unlock
             reason: Reason for unlock
             unlock_method: How account is being unlocked
+            mfa_verified: Whether MFA was verified (REQUIRED for high-security locks)
+
+        Raises:
+            ValidationError: If MFA required but not verified
         """
         active_lock = await self._get_active_lock(user_id)
         if not active_lock:
             logger.warning(f"No active lock found for user {user_id}")
             return
+
+        # CRITICAL: Require MFA for high-security locks
+        if self._requires_mfa_for_unlock(active_lock):
+            if not mfa_verified:
+                raise ValidationError(
+                    f"MFA verification required to unlock {active_lock.lock_severity.value} "
+                    f"lock. User must verify identity via email/SMS/authenticator app."
+                )
+            logger.info(
+                f"MFA verified for unlock of {active_lock.lock_severity.value} "
+                f"lock for user {user_id}"
+            )
 
         # Update lock record
         active_lock.is_active = False
@@ -853,6 +889,219 @@ class AccountLockService:
         )
         return max(0, threshold - current_count)
 
+    def _requires_mfa_for_unlock(self, lock: AccountLock) -> bool:
+        """
+        Determine if MFA is required to unlock this account.
+
+        CRITICAL SECURITY: High-severity locks require MFA verification.
+
+        Args:
+            lock: Account lock to check
+
+        Returns:
+            True if MFA required, False otherwise
+
+        MFA Requirements:
+            - HARD locks: Yes (10+ failed attempts)
+            - PERMANENT locks: Yes (20+ failed attempts or suspicious activity)
+            - SOFT locks: No (5-9 failed attempts)
+            - WARNING: No (3-4 failed attempts)
+        """
+        # High-security locks always require MFA
+        if lock.lock_severity in [LockSeverity.HARD, LockSeverity.PERMANENT]:
+            return True
+
+        # Suspicious activity locks require MFA
+        if lock.lock_reason == LockReason.SUSPICIOUS_ACTIVITY:
+            return True
+
+        # Security breach locks require MFA
+        if lock.lock_reason == LockReason.SECURITY_BREACH:
+            return True
+
+        return False
+
+    async def calculate_login_risk_score(
+        self,
+        user_id: UUID,
+        ip_address: str,
+        user_agent: Optional[str] = None,
+        device_fingerprint: Optional[str] = None,
+    ) -> LoginRiskScore:
+        """
+        Calculate comprehensive risk score for login attempt.
+
+        CRITICAL for B2C security: Combines multiple risk signals.
+
+        Args:
+            user_id: User attempting login
+            ip_address: Login IP
+            user_agent: Browser user agent
+            device_fingerprint: Device fingerprint hash
+
+        Returns:
+            LoginRiskScore with detailed risk assessment
+        """
+        evidence = {}
+
+        # 1. IP Risk (0-25 points)
+        ip_risk = await self._calculate_ip_risk(user_id, ip_address)
+        evidence["ip"] = {
+            "is_new": ip_risk > 10,
+            "reputation": await self.get_ip_reputation(ip_address),
+        }
+
+        # 2. Device Risk (0-25 points)
+        device_risk = await self._calculate_device_risk(
+            user_id, user_agent, device_fingerprint
+        )
+        evidence["device"] = {
+            "is_new": device_risk > 10,
+            "user_agent": user_agent,
+        }
+
+        # 3. Geo Risk (0-25 points)
+        geo_risk = await self._calculate_geo_risk(user_id, ip_address)
+        evidence["geo"] = {
+            "country": "unknown",
+            "impossible_travel": geo_risk > 15,
+        }
+
+        # 4. Time Risk (0-25 points)
+        time_risk = await self._calculate_time_risk(user_id)
+        evidence["time"] = {
+            "unusual_hour": time_risk > 10,
+            "current_hour": datetime.utcnow().hour,
+        }
+
+        # Calculate total score
+        total_score = ip_risk + device_risk + geo_risk + time_risk
+
+        # Determine risk level
+        if total_score >= 75:
+            risk_level = "critical"
+            requires_mfa = True
+        elif total_score >= 50:
+            risk_level = "high"
+            requires_mfa = True
+        elif total_score >= 25:
+            risk_level = "medium"
+            requires_mfa = False
+        else:
+            risk_level = "low"
+            requires_mfa = False
+
+        logger.info(
+            f"Login risk score for user {user_id}: {total_score}/100 "
+            f"({risk_level}) - MFA required: {requires_mfa}"
+        )
+
+        return LoginRiskScore(
+            total_score=total_score,
+            ip_risk=ip_risk,
+            device_risk=device_risk,
+            geo_risk=geo_risk,
+            time_risk=time_risk,
+            risk_level=risk_level,
+            requires_mfa=requires_mfa,
+            evidence=evidence,
+        )
+
+    async def _calculate_ip_risk(self, user_id: UUID, ip_address: str) -> float:
+        """Calculate IP-based risk (0-25)."""
+        risk = 0.0
+
+        # Check if IP is new for this user
+        # TODO: Query user's previous IPs from database
+        is_new_ip = True  # Mock
+        if is_new_ip:
+            risk += 10.0
+
+        # Check IP reputation
+        reputation = await self.get_ip_reputation(ip_address)
+        if reputation.get("is_vpn"):
+            risk += 5.0
+        if reputation.get("is_proxy"):
+            risk += 5.0
+        if reputation.get("is_tor"):
+            risk += 10.0
+        if reputation.get("abuse_score", 0) > 50:
+            risk += 5.0
+
+        return min(risk, 25.0)
+
+    async def _calculate_device_risk(
+        self,
+        user_id: UUID,
+        user_agent: Optional[str],
+        device_fingerprint: Optional[str],
+    ) -> float:
+        """Calculate device-based risk (0-25)."""
+        risk = 0.0
+
+        # Check if device is new
+        # TODO: Query user's previous devices
+        is_new_device = True  # Mock
+        if is_new_device:
+            risk += 15.0
+
+        # Check for suspicious user agent patterns
+        if user_agent:
+            if "bot" in user_agent.lower():
+                risk += 10.0
+            # Check for user agent rotation (advanced attack)
+            # TODO: Compare with recent user agents
+
+        return min(risk, 25.0)
+
+    async def _calculate_geo_risk(self, user_id: UUID, ip_address: str) -> float:
+        """Calculate geolocation-based risk (0-25)."""
+        risk = 0.0
+
+        # Get current location
+        current_geo = await self._get_geolocation(ip_address)
+        if not current_geo:
+            return 0.0
+
+        # Get user's last known location
+        # TODO: Query from database
+        last_geo = None  # Mock
+
+        if last_geo:
+            # Check for geographically impossible travel
+            # (e.g., user in Istanbul 1 hour ago, now in New York)
+            # TODO: Calculate distance and time between locations
+            # if distance > 1000km and time < 2 hours:
+            #     risk += 20.0
+            pass
+
+        # Check if country is different
+        # TODO: Compare countries
+        # if current_country != usual_country:
+        #     risk += 10.0
+
+        return min(risk, 25.0)
+
+    async def _calculate_time_risk(self, user_id: UUID) -> float:
+        """Calculate time-based risk (0-25)."""
+        risk = 0.0
+
+        current_hour = datetime.utcnow().hour
+
+        # Get user's usual login hours
+        # TODO: Query from login history
+        usual_hours = set()  # Mock: {8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
+
+        # Check if current hour is unusual
+        if usual_hours and current_hour not in usual_hours:
+            risk += 10.0
+
+        # Extra risk for very unusual hours (2-6 AM)
+        if 2 <= current_hour <= 6:
+            risk += 5.0
+
+        return min(risk, 25.0)
+
     async def _detect_suspicious_activity(
         self, user_id: UUID, ip_address: str
     ) -> Optional[SuspiciousActivityPattern]:
@@ -908,6 +1157,7 @@ __all__ = [
     "LockStatus",
     "LockStatistics",
     "SuspiciousActivityPattern",
+    "LoginRiskScore",
     "LockReason",
     "LockSeverity",
     "UnlockMethod",
